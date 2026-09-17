@@ -1,6 +1,13 @@
+Backend\DiscussionService.class
+Backend\ClientHandler.class
 Backend\ProjectService.class
-Backend\UserController.class
 Backend\MemberRequestController.class
+Backend\TaskDetailService.class
+Backend\ChatServer.class
+Backend\UserController.class
+Backend\TaskService.class
 Backend\HealthController.class
+Backend\DatasetService.class
 Backend\DemoApplication.class
+Backend\ChatServerRunner.class
 Backend\AuthService.class

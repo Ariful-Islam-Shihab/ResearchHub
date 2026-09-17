@@ -22,6 +22,12 @@
 			<artifactId>spring-boot-starter-webmvc</artifactId>
 		</dependency>
 
+		<!-- WebSocket -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+
 		<!-- JDBC (raw SQL queries, like PHP) -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

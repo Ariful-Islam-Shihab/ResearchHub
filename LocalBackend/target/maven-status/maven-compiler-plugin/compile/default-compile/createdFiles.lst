@@ -1,0 +1,8 @@
+com\researchhub\localbackend\ChatSocketClient.class
+com\researchhub\localbackend\LocalBackendApplication.class
+com\researchhub\localbackend\ProxyController$1.class
+com\researchhub\localbackend\DatasetTransferController.class
+com\researchhub\localbackend\DatasetLocalService$1.class
+com\researchhub\localbackend\ChatLocalController.class
+com\researchhub\localbackend\ProxyController.class
+com\researchhub\localbackend\DatasetLocalService.class
