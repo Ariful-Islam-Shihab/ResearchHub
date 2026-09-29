@@ -17,10 +17,61 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!userJson) { window.location.href = 'login.html'; return; }
     currentUser = JSON.parse(userJson);
 
+    // Check for local_sync_path
+    if (!currentUser.local_sync_path || currentUser.local_sync_path === 'null') {
+        const syncPathModal = document.getElementById('syncPathModal');
+        const syncPathModalContent = document.getElementById('syncPathModalContent');
+        if (syncPathModal && syncPathModalContent) {
+            syncPathModal.classList.remove('hidden');
+            syncPathModal.classList.add('flex');
+            syncPathModalContent.classList.remove('opacity-0', 'scale-95');
+            syncPathModalContent.classList.add('opacity-100', 'scale-100');
+        }
+    }
+
+    // Handle Sync Path Form Submission
+    const syncPathForm = document.getElementById('syncPathForm');
+    if (syncPathForm) {
+        syncPathForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const path = document.getElementById('localSyncPathInput').value.trim();
+            if (!path) return;
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/users/${currentUser.id}/sync-path`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local_sync_path: path })
+                });
+                const responseData = await response.json();
+                if (responseData.success) {
+                    currentUser.local_sync_path = path;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    const syncPathModal = document.getElementById('syncPathModal');
+                    const syncPathModalContent = document.getElementById('syncPathModalContent');
+                    syncPathModalContent.classList.remove('scale-100', 'opacity-100');
+                    syncPathModalContent.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        syncPathModal.classList.remove('flex');
+                        syncPathModal.classList.add('hidden');
+                    }, 200);
+                } else {
+                    alert('Error saving sync path: ' + response.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while saving the sync path.');
+            }
+        });
+    }
+
     // Parse ?id= from URL
     const params = new URLSearchParams(window.location.search);
     projectId = parseInt(params.get('id'));
     if (!projectId) { window.location.href = 'dashboard.html'; return; }
+    
+    if (typeof updateChatProject === 'function') {
+        updateChatProject(projectId);
+    }
 
     updateOnlineStatus();
     window.addEventListener('online', updateOnlineStatus);
@@ -30,6 +81,72 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('user');
         window.location.href = 'login.html';
     });
+
+    // Check for local_sync_path
+    if (!currentUser.local_sync_path || currentUser.local_sync_path === 'null') {
+        const syncPathModal = document.getElementById('syncPathModal');
+        const syncPathModalContent = document.getElementById('syncPathModalContent');
+        if (syncPathModal && syncPathModalContent) {
+            syncPathModal.classList.remove('hidden');
+            syncPathModal.classList.add('flex');
+            syncPathModalContent.classList.remove('opacity-0', 'scale-95');
+            syncPathModalContent.classList.add('opacity-100', 'scale-100');
+        } else {
+            alert("Modal elements not found in HTML!");
+        }
+    }
+
+    // Handle Sync Path Form Submission
+    const syncPathForm = document.getElementById('syncPathForm');
+    if (syncPathForm) {
+        syncPathForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const path = document.getElementById('localSyncPathInput').value.trim();
+            if (!path) return;
+            
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/users/${currentUser.id}/sync-path`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local_sync_path: path })
+                });
+                const responseData = await response.json();
+                if (responseData.success) {
+                    // update local storage
+                    currentUser.local_sync_path = path;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    // Hide Modal
+                    const syncPathModal = document.getElementById('syncPathModal');
+                    const syncPathModalContent = document.getElementById('syncPathModalContent');
+                    syncPathModalContent.classList.remove('scale-100', 'opacity-100');
+                    syncPathModalContent.classList.add('scale-95', 'opacity-0');
+                    
+                    setTimeout(() => {
+                        syncPathModal.classList.remove('flex');
+                        syncPathModal.classList.add('hidden');
+                        
+                        // If project is already loaded, init it now!
+                        if (projectData) {
+                            let localBaseUrl = API_CONFIG.getLocalBaseUrl();
+                            fetch(localBaseUrl + '/init-project', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ basePath: currentUser.local_sync_path, projectName: projectData.title, projectId: projectId, userId: currentUser.id })
+                            }).catch(e => console.error(e));
+                        }
+                    }, 200);
+                } else {
+                    alert('Failed to save path: ' + responseData.message);
+                }
+            } catch (err) {
+                console.error('Error saving sync path:', err);
+                alert('An error occurred. Please ensure CentralBackend is running.');
+            }
+        });
+    }
+
+
 
     // Invite panel controls
     document.getElementById('addMemberBtn').addEventListener('click', toggleAddMemberPanel);
@@ -93,6 +210,33 @@ async function loadProject() {
         if (isOwner) {
             loadPendingInvitations();
         }
+        
+        // Initialize local directories if sync path is set
+        if (currentUser.local_sync_path) {
+            try {
+                let localBaseUrl = API_CONFIG.getLocalBaseUrl();
+                fetch(localBaseUrl + '/init-project', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        basePath: currentUser.local_sync_path,
+                        projectName: projectData.title,
+                        projectId: projectId,
+                        userId: currentUser.id
+                    })
+                }).catch(err => console.error('Local backend not reachable', err));
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        // Auto-load datasets and trigger sync on project open
+        // This ensures files are auto-downloaded for ALL users when they open the project
+        loadDatasets().then(() => {
+            if (currentUser.local_sync_path) {
+                autoSyncDatasets();
+            }
+        }).catch(err => console.error('Auto-load datasets error:', err));
     } catch (err) {
         console.error('Failed to load project:', err);
         showError('Failed to load project. Is the server running?');
@@ -510,6 +654,11 @@ function switchTab(tab) {
     // Load datasets when switching to datasets tab
     if (tab === 'datasets') {
         loadDatasets();
+    }
+    
+    // Initialize files/LaTeX tab
+    if (tab === 'files') {
+        initFilesTab();
     }
 }
 

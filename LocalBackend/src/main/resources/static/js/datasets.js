@@ -229,7 +229,7 @@ function closeDatasetDetail() {
 // Open Native Folder
 async function openNativeFolder(folderName) {
     try {
-        let res = await fetch(`http://localhost:3000/api/local/open-folder?folderName=${encodeURIComponent(folderName)}`);
+        let res = await fetch(`${API_CONFIG.BASE_URL}/local/open-folder?folderName=${encodeURIComponent(folderName)}`);
         if (res.ok) {
             let msg = await res.text();
             showToast(msg, 'success');
@@ -378,10 +378,11 @@ async function submitAddDataset() {
         });
         let result = await res.json();
 
-            if (result.success) {
+        if (result.success) {
                 let newDatasetId = result.data.id;
                 let localBaseUrl = API_CONFIG.BASE_URL.replace('/api', '/local');
-                let uploadCount = 0;
+                let centralUploadCount = 0;
+                let localSaveCount = 0;
                 
                 // Upload each selected file
                 for (let i = 0; i < selectedFiles.length; i++) {
@@ -390,19 +391,29 @@ async function submitAddDataset() {
                     
                     let relativePath = file.webkitRelativePath || file.name;
                     
-                    // 1. Upload to LocalBackend to save locally
-                    let localFormData = new FormData();
-                    localFormData.append('file', file);
-                    localFormData.append('datasetId', newDatasetId);
-                    localFormData.append('relativePath', relativePath);
+                    // 1. Save to local dataset folder (independent of central upload)
+                    try {
+                        let localFormData = new FormData();
+                        localFormData.append('file', file);
+                        localFormData.append('basePath', currentUser.local_sync_path || '');
+                        localFormData.append('projectName', projectData.title);
+                        localFormData.append('datasetName', name);
+                        localFormData.append('relativePath', relativePath);
+                        
+                        let localRes = await fetch(localBaseUrl + '/save-downloaded-file', {
+                            method: 'POST',
+                            body: localFormData
+                        });
+                        if (localRes.ok) {
+                            let localData = await localRes.json();
+                            if (localData.success) localSaveCount++;
+                        }
+                    } catch (localErr) {
+                        console.error('Local save error for', relativePath, localErr);
+                    }
                     
-                    let localRes = await fetch(localBaseUrl + '/datasets/upload-file', {
-                        method: 'POST',
-                        body: localFormData
-                    });
-                    
-                    if (localRes.ok) {
-                        // 2. Upload to CentralBackend to register file metadata
+                    // 2. Upload to CentralBackend (always runs, regardless of local save result)
+                    try {
                         let centralFormData = new FormData();
                         centralFormData.append('file', file);
                         centralFormData.append('userId', currentUser.id);
@@ -416,15 +427,19 @@ async function submitAddDataset() {
                         });
                         
                         if (uploadRes.ok) {
-                            uploadCount++;
+                            centralUploadCount++;
                         }
+                    } catch (centralErr) {
+                        console.error('Central upload error for', relativePath, centralErr);
                     }
                 }
 
-                if (uploadCount === selectedFiles.length) {
+                if (centralUploadCount === selectedFiles.length) {
                     showToast('Dataset registered and all files uploaded!', 'success');
+                } else if (centralUploadCount > 0) {
+                    showToast('Dataset registered. ' + centralUploadCount + '/' + selectedFiles.length + ' files uploaded.', 'error');
                 } else {
-                    showToast('Dataset registered but some files failed to upload.', 'error');
+                    showToast('Dataset registered but file uploads failed.', 'error');
                 }
 
                 closeAddDatasetModal();
@@ -550,20 +565,22 @@ async function downloadFromServer(datasetId) {
     }
     if (ds == null) return;
 
-    // Use Web-Based Directory Picker
-    let dirHandle;
-    try {
-        if (window.showDirectoryPicker) {
-            dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        } else {
-            showToast('Your browser does not support the native folder picker.', 'error');
+    // Use Web-Based Directory Picker ONLY if no local_sync_path
+    let dirHandle = null;
+    if (!currentUser.local_sync_path) {
+        try {
+            if (window.showDirectoryPicker) {
+                dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+            } else {
+                showToast('Your browser does not support the native folder picker.', 'error');
+                return;
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                showToast('Failed to select directory.', 'error');
+            }
             return;
         }
-    } catch (err) {
-        if (err.name !== 'AbortError') {
-            showToast('Failed to select directory.', 'error');
-        }
-        return;
     }
 
     // Show sync progress modal
@@ -620,7 +637,7 @@ async function downloadFromServer(datasetId) {
             return await currentHandle.getFileHandle(parts[parts.length - 1], { create: true });
         }
 
-        // Step 2: Download each file and save it via File System Access API
+        // Step 2: Download each file and save it
         for (let i = 0; i < files.length; i++) {
             let fileInfo = files[i];
             
@@ -632,16 +649,39 @@ async function downloadFromServer(datasetId) {
             // Download from CentralBackend
             let downloadRes = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/datasets/${datasetId}/files/${fileInfo.id}/download`);
             if (downloadRes.ok) {
-                let fileBytes = await downloadRes.arrayBuffer();
+                let fileBlob = await downloadRes.blob();
                 
                 try {
-                    // Save directly via Browser API
-                    let fileHandle = await getFileHandleFromPath(dirHandle, fileInfo.file_name);
-                    let writable = await fileHandle.createWritable();
-                    await writable.write(fileBytes);
-                    await writable.close();
-                    
-                    downloadCount++;
+                    if (currentUser.local_sync_path) {
+                        // Use LocalBackend to save to predefined path
+                        let localFormData = new FormData();
+                        localFormData.append('file', fileBlob, fileInfo.file_name);
+                        localFormData.append('basePath', currentUser.local_sync_path);
+                        localFormData.append('projectName', projectData.title);
+                        localFormData.append('datasetName', ds.name);
+                        localFormData.append('relativePath', fileInfo.file_name);
+
+                        let localBaseUrl = API_CONFIG.BASE_URL.replace('/api', '/local');
+                        let localRes = await fetch(localBaseUrl + '/save-downloaded-file', {
+                            method: 'POST',
+                            body: localFormData
+                        });
+                        let localData = await localRes.json();
+                        if (localData.success) {
+                            downloadCount++;
+                        } else {
+                            console.error("Local save error:", localData.message);
+                        }
+                    } else if (dirHandle) {
+                        // Save directly via Browser API (Fallback)
+                        let fileBytes = await fileBlob.arrayBuffer();
+                        let fileHandle = await getFileHandleFromPath(dirHandle, fileInfo.file_name);
+                        let writable = await fileHandle.createWritable();
+                        await writable.write(fileBytes);
+                        await writable.close();
+                        
+                        downloadCount++;
+                    }
                 } catch (writeErr) {
                     console.error("Error writing file", fileInfo.file_name, writeErr);
                 }
@@ -661,7 +701,7 @@ async function downloadFromServer(datasetId) {
                     status: 'SYNCHRONIZED',
                     syncedVersion: ds.version || 'v1.0',
                     progress: 100,
-                    localPath: dirHandle.name // Just store the directory name as we can't get absolute path in browser
+                    localPath: dirHandle ? dirHandle.name : ds.name
                 })
             });
 
@@ -729,3 +769,128 @@ function filterDatasets(query) {
     renderDatasetsTable();
     allDatasets = original;
 }
+
+// ==============================================
+// Auto-Sync Background Process
+// ==============================================
+let isAutoSyncing = false;
+async function autoSyncDatasets() {
+    if (isAutoSyncing || !currentUser || !currentUser.local_sync_path || !datasetsLoaded) return;
+    isAutoSyncing = true;
+    
+    for (let i = 0; i < allDatasets.length; i++) {
+        let ds = allDatasets[i];
+        try {
+            // 1. Get central files list
+            let listRes = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/datasets/${ds.id}/files`);
+            let listResult = await listRes.json();
+            let centralFiles = listResult.success ? listResult.files : [];
+
+            let localBaseUrl = API_CONFIG.BASE_URL.replace('/api', '/local');
+            // 2. Call LocalBackend /local/datasets/sync to diff against local folder
+            let syncRes = await fetch(localBaseUrl + '/datasets/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    basePath: currentUser.local_sync_path,
+                    projectName: projectData.title,
+                    datasetName: ds.name,
+                    files: centralFiles
+                })
+            });
+            let syncData = await syncRes.json();
+
+            if (syncData.success) {
+                let changed = false;
+
+                // 3. Handle missingLocally (server has it, local doesn't) -> Download to local
+                for (let missing of syncData.missingLocally) {
+                    let downloadRes = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/datasets/${ds.id}/files/${missing.id}/download`);
+                    if (downloadRes.ok) {
+                        let fileBlob = await downloadRes.blob();
+                        let localFormData = new FormData();
+                        localFormData.append('file', fileBlob, missing.file_name);
+                        localFormData.append('basePath', currentUser.local_sync_path);
+                        localFormData.append('projectName', projectData.title);
+                        localFormData.append('datasetName', ds.name);
+                        localFormData.append('relativePath', missing.file_name);
+
+                        await fetch(localBaseUrl + '/save-downloaded-file', {
+                            method: 'POST',
+                            body: localFormData
+                        });
+                        changed = true;
+                    }
+                }
+
+                // 4. Handle localChanges (local file is newer/bigger/new) -> Upload to server
+                for (let change of syncData.localChanges) {
+                    let fileName = change.name;
+                    let fileId = change.id;
+                    
+                    // Construct local folder path to pass to DatasetTransferController
+                    let safeProjectName = projectData.title.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    let safeDatasetName = ds.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+                    let localDirPath = `${currentUser.local_sync_path}/ResearchHub/${safeProjectName}/dataset/${safeDatasetName}`;
+
+                    // Fetch the file blob from local backend
+                    let readRes = await fetch(localBaseUrl + `/datasets/read-file?path=${encodeURIComponent(localDirPath)}&fileName=${encodeURIComponent(fileName)}`);
+                    if (readRes.ok) {
+                        let fileBlob = await readRes.blob();
+                        
+                        // Upload to CentralBackend with ALL required fields
+                        let centralFormData = new FormData();
+                        centralFormData.append('file', fileBlob, fileName);
+                        centralFormData.append('userId', currentUser.id);
+                        centralFormData.append('fileName', fileName);
+                        centralFormData.append('fileSize', fileBlob.size);
+                        centralFormData.append('fileType', 'application/octet-stream');
+                        
+                        let uploadUrl = `${API_CONFIG.BASE_URL}/projects/${projectId}/datasets/${ds.id}/files/upload`;
+                        await fetch(uploadUrl, {
+                            method: 'POST',
+                            body: centralFormData
+                        });
+                        changed = true;
+                    }
+                }
+
+                if (changed) {
+                    // Update sync status on server to SYNCHRONIZED
+                    await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/datasets/${ds.id}/sync-status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: currentUser.id,
+                            status: 'SYNCHRONIZED',
+                            syncedVersion: ds.version || 'v1.0',
+                            progress: 100,
+                            localPath: ds.name
+                        })
+                    });
+                    loadDatasets(); // refresh UI to show sync completed
+                } else if (ds.my_sync_status !== 'SYNCHRONIZED') {
+                    // Mark as synchronized if it wasn't already and there were no changes
+                    await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/datasets/${ds.id}/sync-status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: currentUser.id,
+                            status: 'SYNCHRONIZED',
+                            syncedVersion: ds.version || 'v1.0',
+                            progress: 100,
+                            localPath: ds.name
+                        })
+                    });
+                    loadDatasets();
+                }
+            }
+        } catch (e) {
+            console.error("Error auto-syncing dataset", ds.name, e);
+        }
+    }
+    
+    isAutoSyncing = false;
+}
+
+setInterval(autoSyncDatasets, 5000);

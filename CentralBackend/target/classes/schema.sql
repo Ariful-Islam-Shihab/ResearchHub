@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS users (
     password VARCHAR(255) NOT NULL,
     university VARCHAR(255),
     research_interests TEXT,
+    local_sync_path VARCHAR(1024),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -119,4 +120,49 @@ CREATE TABLE IF NOT EXISTS dataset_files (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (dataset_id) REFERENCES datasets(id) ON DELETE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS project_files (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    parent_id INT DEFAULT NULL,
+    name VARCHAR(500) NOT NULL,
+    is_directory BOOLEAN DEFAULT FALSE,
+    content MEDIUMTEXT,
+    content_hash VARCHAR(64),
+    size BIGINT DEFAULT 0,
+    mime_type VARCHAR(255),
+    version INT DEFAULT 1,
+    created_by INT NOT NULL,
+    last_modified_by INT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (parent_id) REFERENCES project_files(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (last_modified_by) REFERENCES users(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_file_in_parent (project_id, parent_id, name)
+);
+
+CREATE TABLE IF NOT EXISTS file_versions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    file_id INT NOT NULL,
+    version_number INT NOT NULL,
+    content MEDIUMTEXT,
+    content_hash VARCHAR(64),
+    change_description VARCHAR(500),
+    created_by INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (file_id) REFERENCES project_files(id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS discussion_messages (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    project_id INT NOT NULL,
+    user_id INT NOT NULL,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );

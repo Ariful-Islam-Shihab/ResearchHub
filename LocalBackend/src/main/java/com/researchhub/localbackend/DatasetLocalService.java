@@ -183,17 +183,24 @@ public class DatasetLocalService {
         return response;
     }
 
-    // ─── UPLOAD a file from Web UI (Option B) ────────────────────────────────
+    // UPLOAD a file from Web UI 
     @PostMapping("/upload-file")
     public Map<String, Object> uploadFile(
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
             @RequestParam("datasetId") String datasetId,
-            @RequestParam("relativePath") String relativePath) {
+            @RequestParam("relativePath") String relativePath,
+            @RequestParam("basePath") String basePathStr,
+            @RequestParam("projectName") String projectName,
+            @RequestParam("datasetName") String datasetName) {
         Map<String, Object> response = new HashMap<>();
         try {
-            // Save to ./datasets/<datasetId>/<relativePath>
-            Path basePath = Paths.get("datasets", datasetId).toAbsolutePath();
-            Path destPath = basePath.resolve(relativePath).normalize();
+            // Save to basePath/ResearchHub/projectName/dataset/datasetName/relativePath
+            Path basePath = Paths.get(basePathStr).toAbsolutePath();
+            Path destPath = basePath.resolve("ResearchHub")
+                                    .resolve(projectName)
+                                    .resolve("dataset")
+                                    .resolve(datasetName)
+                                    .resolve(relativePath).normalize();
             
             // Ensure we don't escape the base directory (security)
             if (!destPath.startsWith(basePath)) {
@@ -201,12 +208,13 @@ public class DatasetLocalService {
             }
             
             Files.createDirectories(destPath.getParent());
-            file.transferTo(destPath.toFile());
+            java.nio.file.Files.copy(file.getInputStream(), destPath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
             
             response.put("success", true);
             response.put("message", "File saved successfully");
             response.put("savedPath", destPath.toString());
         } catch (Exception e) {
+            e.printStackTrace(); // Also print to console to debug locally
             response.put("success", false);
             response.put("message", "Error saving file: " + e.getMessage());
         }

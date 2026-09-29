@@ -103,6 +103,11 @@ function createTaskElement(task) {
 
     // Drag events
     el.addEventListener('dragstart', (e) => {
+        if (task.assigned_to !== currentUser.id) {
+            e.preventDefault();
+            showToast('You can only move tasks assigned to you', 'error');
+            return;
+        }
         e.dataTransfer.setData('text/plain', task.id);
         el.classList.add('opacity-50');
     });
@@ -142,7 +147,7 @@ document.querySelectorAll('.dropzone').forEach(zone => {
                 const res = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/tasks/${taskId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: newStatus })
+                    body: JSON.stringify({ status: newStatus, updaterId: currentUser.id })
                 });
                 const result = await res.json();
                 if (!result.success) {
@@ -374,6 +379,7 @@ async function updateTaskField(fieldKey, value) {
     try {
         const payload = {};
         payload[fieldKey] = value;
+        payload['updaterId'] = currentUser.id;
         
         const res = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/tasks/${currentDetailTaskId}`, {
             method: 'PUT',
@@ -428,7 +434,7 @@ async function toggleSubtask(subtaskId, isCompleted) {
         const res = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/tasks/${currentDetailTaskId}/subtasks/${subtaskId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ is_completed: isCompleted })
+            body: JSON.stringify({ is_completed: isCompleted, updaterId: currentUser.id })
         });
         const result = await res.json();
         if (result.success) {

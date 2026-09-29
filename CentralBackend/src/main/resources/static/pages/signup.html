@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ResearchHub - Sign Up</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+    <!-- Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="../js/tailwind-config.js"></script>
+    <!-- Global CSS -->
+    <link href="../css/global.css" rel="stylesheet"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface min-h-screen flex items-center justify-center p-4 antialiased selection:bg-primary-container selection:text-white bg-grid">
+    <!-- Main Registration Panel -->
+    <div class="w-full max-w-[440px] bg-surface border border-outline-variant rounded p-xl shadow-2xl shadow-black/50 flex flex-col relative overflow-hidden">
+        <!-- Subtle Top Highlight Line -->
+        <div class="absolute top-0 left-0 w-full h-[2px] bg-primary-container opacity-50"></div>
+        <!-- Header -->
+        <div class="flex flex-col items-center text-center pb-lg border-b border-outline-variant mb-lg">
+            <div class="w-12 h-12 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center mb-sm">
+                <span class="material-symbols-outlined text-primary-container text-2xl" style="font-variation-settings: 'FILL' 1;">biotech</span>
+            </div>
+            <h1 class="font-headline-md text-headline-md font-bold text-on-surface tracking-tight">ResearchHub</h1>
+            <p class="font-label-caps text-label-caps text-on-surface-variant uppercase mt-1">Analytical Workbench</p>
+        </div>
+        <!-- Title -->
+        <div class="mb-md">
+            <h2 class="font-title-sm text-title-sm text-on-surface">Create an Account</h2>
+            <p class="font-body-dense text-body-dense text-on-surface-variant mt-xs">Provision a new researcher profile.</p>
+        </div>
+        <!-- Form -->
+        <form id="signupForm" class="flex flex-col gap-md">
+            <!-- Standard Fields -->
+            <div class="flex flex-col gap-sm">
+                <div>
+                    <label class="block font-label-caps text-label-caps text-on-surface-variant mb-[2px]">Full Name</label>
+                    <input id="signupName" class="w-full h-[28px] bg-surface-container-lowest border border-outline-variant rounded-[2px] px-2 font-body-base text-body-base text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all" placeholder="e.g. Dr. Jane Doe" required="" type="text"/>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-on-surface-variant mb-[2px]">Email</label>
+                    <input id="signupEmail" class="w-full h-[28px] bg-surface-container-lowest border border-outline-variant rounded-[2px] px-2 font-body-base text-body-base text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all" placeholder="name@institution.edu" required="" type="email"/>
+                </div>
+                <div class="grid grid-cols-2 gap-sm">
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant mb-[2px]">Password</label>
+                        <div class="relative">
+                            <input id="signupPassword" class="w-full h-[28px] bg-surface-container-lowest border border-outline-variant rounded-[2px] pl-2 pr-8 font-body-base text-body-base text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all font-code-base" required="" type="password"/>
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors" type="button" tabindex="-1">
+                                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block font-label-caps text-label-caps text-on-surface-variant mb-[2px]">Confirm Password</label>
+                        <div class="relative">
+                            <input id="signupConfirm" class="w-full h-[28px] bg-surface-container-lowest border border-outline-variant rounded-[2px] pl-2 pr-8 font-body-base text-body-base text-on-surface focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all font-code-base" required="" type="password"/>
+                            <button class="absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors" type="button" tabindex="-1">
+                                <span class="material-symbols-outlined text-[16px]">visibility</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Visual Separator for Optional Section -->
+            <div class="my-xs flex items-center gap-sm">
+                <div class="h-[1px] flex-1 bg-outline-variant/50"></div>
+                <span class="font-code-sm text-code-sm text-on-surface-variant uppercase tracking-wider">Metadata (Optional)</span>
+                <div class="h-[1px] flex-1 bg-outline-variant/50"></div>
+            </div>
+            <!-- Optional Fields -->
+            <div class="flex flex-col gap-sm">
+                <div>
+                    <label class="block font-label-caps text-label-caps text-on-surface-variant mb-[2px]">University / Institution</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[14px] text-on-surface-variant">account_balance</span>
+                        <input id="signupUniversity" class="w-full h-[28px] bg-surface-container-lowest border border-outline-variant rounded-[2px] pl-7 pr-2 font-body-base text-body-base text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all" placeholder="e.g. MIT, CERN" type="text"/>
+                    </div>
+                </div>
+                <div>
+                    <label class="block font-label-caps text-label-caps text-on-surface-variant mb-[2px]">Research Interests</label>
+                    <div class="relative">
+                        <span class="material-symbols-outlined absolute left-2 top-1/2 -translate-y-1/2 text-[14px] text-on-surface-variant">category</span>
+                        <input id="signupInterests" class="w-full h-[28px] bg-surface-container-lowest border border-outline-variant rounded-[2px] pl-7 pr-2 font-body-base text-body-base text-on-surface placeholder:text-on-surface-variant/50 focus:border-primary-container focus:ring-1 focus:ring-primary-container focus:outline-none transition-all" placeholder="e.g. Quantum Computing, Genomics" type="text"/>
+                    </div>
+                </div>
+            </div>
+            <!-- Actions -->
+            <div class="mt-md pt-md border-t border-outline-variant flex flex-col items-center gap-sm">
+                <button class="w-full h-[32px] bg-primary-container text-white font-title-sm text-title-sm rounded-[4px] hover:bg-inverse-primary hover:shadow-[0_0_8px_rgba(79,70,229,0.4)] transition-all flex items-center justify-center gap-2 group" type="submit">
+                    <span>Create Account</span>
+                    <span class="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                </button>
+                <a class="font-body-dense text-body-dense text-on-surface-variant hover:text-primary-container hover:underline transition-colors mt-1 flex items-center gap-1" href="login.html">
+                    <span class="material-symbols-outlined text-[14px]">arrow_back</span>
+                    Back to Sign In
+                </a>
+            </div>
+        </form>
+    </div>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

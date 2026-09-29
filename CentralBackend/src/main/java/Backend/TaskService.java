@@ -68,6 +68,12 @@ public class TaskService {
                 assignedTo = Integer.parseInt(payload.get("assignedTo").toString());
             }
 
+            if (assignedTo == null) {
+                response.put("success", false);
+                response.put("message", "Task must be assigned upon creation.");
+                return response;
+            }
+
             String dueDate = null;
             if (payload.containsKey("dueDate") && payload.get("dueDate") != null
                     && !payload.get("dueDate").toString().isEmpty()) {
@@ -80,18 +86,12 @@ public class TaskService {
                 return response;
             }
 
-            if (assignedTo != null && dueDate != null) {
+            if (dueDate != null) {
                 db.update("INSERT INTO tasks (project_id, title, description, status, priority, assigned_to, created_by, due_date) VALUES (?,?,?,?,?,?,?,?)",
                         projectId, title, description, status, priority, assignedTo, createdBy, dueDate);
-            } else if (assignedTo != null) {
+            } else {
                 db.update("INSERT INTO tasks (project_id, title, description, status, priority, assigned_to, created_by) VALUES (?,?,?,?,?,?,?)",
                         projectId, title, description, status, priority, assignedTo, createdBy);
-            } else if (dueDate != null) {
-                db.update("INSERT INTO tasks (project_id, title, description, status, priority, created_by, due_date) VALUES (?,?,?,?,?,?,?)",
-                        projectId, title, description, status, priority, createdBy, dueDate);
-            } else {
-                db.update("INSERT INTO tasks (project_id, title, description, status, priority, created_by) VALUES (?,?,?,?,?,?)",
-                        projectId, title, description, status, priority, createdBy);
             }
 
             int taskId = db.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
@@ -130,6 +130,25 @@ public class TaskService {
                 params.add(payload.get("description") != null ? payload.get("description").toString().trim() : "");
             }
             if (payload.containsKey("status")) {
+                List<Map<String, Object>> existingTask = db.queryForList("SELECT assigned_to FROM tasks WHERE id = ?", taskId);
+                if (existingTask.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "Task not found.");
+                    return response;
+                }
+                
+                Object assignedToObj = existingTask.get(0).get("assigned_to");
+                Integer assignedTo = assignedToObj != null ? ((Number) assignedToObj).intValue() : null;
+                
+                Object updaterIdObj = payload.get("updaterId");
+                Integer updaterId = updaterIdObj != null ? Integer.parseInt(updaterIdObj.toString()) : null;
+
+                if (assignedTo == null || !assignedTo.equals(updaterId)) {
+                    response.put("success", false);
+                    response.put("message", "Only the assigned individual can change the task status.");
+                    return response;
+                }
+
                 setClauses.append("status = ?, ");
                 params.add(payload.get("status").toString());
             }

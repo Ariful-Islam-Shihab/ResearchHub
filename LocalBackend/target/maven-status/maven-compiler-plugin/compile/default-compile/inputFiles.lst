@@ -1,6 +1,12 @@
 C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\ChatLocalController.java
 C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\ChatSocketClient.java
 C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\DatasetLocalService.java
+C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\DatasetSyncService.java
 C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\DatasetTransferController.java
+C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\InitController.java
+C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\LatexService.java
 C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\LocalBackendApplication.java
+C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\LocalSyncController.java
+C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\LocalSyncService.java
 C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\ProxyController.java
+C:\Users\88016\Desktop\ResearchHub\LocalBackend\src\main\java\com\researchhub\localbackend\SaveFileController.java

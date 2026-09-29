@@ -26,7 +26,8 @@ public class ChatSocketClient {
     private PrintWriter out;
     private BufferedReader in;
     private Thread listenerThread;
-    private final ConcurrentLinkedQueue<String> messageQueue = new ConcurrentLinkedQueue<>();
+    private final List<String> messageBuffer = new ArrayList<>();
+    private final int MAX_BUFFER_SIZE = 100;
     private boolean isRunning = true;
 
     @PostConstruct
@@ -47,7 +48,12 @@ public class ChatSocketClient {
                 try {
                     String message;
                     while (isRunning && (message = in.readLine()) != null) {
-                        messageQueue.add(message);
+                        synchronized(messageBuffer) {
+                            messageBuffer.add(message);
+                            if (messageBuffer.size() > MAX_BUFFER_SIZE) {
+                                messageBuffer.remove(0);
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     if (isRunning) {
@@ -72,12 +78,9 @@ public class ChatSocketClient {
     }
 
     public List<String> pollMessages() {
-        List<String> messages = new ArrayList<>();
-        String msg;
-        while ((msg = messageQueue.poll()) != null) {
-            messages.add(msg);
+        synchronized(messageBuffer) {
+            return new ArrayList<>(messageBuffer);
         }
-        return messages;
     }
 
     @PreDestroy

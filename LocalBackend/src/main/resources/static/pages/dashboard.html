@@ -370,8 +370,36 @@
         </div>
     </div>
     
-    <script src="../js/api.js"></script>
-    <script src="../js/websocket.js"></script>
-    <script src="../js/dashboard.js"></script>
+    <!-- Sync Path Modal -->
+    <div id="syncPathModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col scale-95 opacity-0 transition-all duration-200" id="syncPathModalContent">
+            <div class="flex items-center space-x-md mb-md">
+                <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container text-[24px]">folder_managed</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Setup Workspace</h2>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Required for offline access and syncing.</p>
+                </div>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface mb-md">Please specify a local folder path where ResearchHub will store and sync all your project files (datasets, latex files).</p>
+            <form id="syncPathForm" class="flex flex-col space-y-md mb-lg">
+                <div class="flex flex-col space-y-xs">
+                    <label class="font-title-sm text-title-sm text-on-surface" for="localSyncPathInput">Local Directory Path <span class="text-error">*</span></label>
+                        <input class="h-[36px] flex-1 bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary" id="localSyncPathInput" placeholder="e.g. C:\Users\88016\Desktop\ResearchHub" type="text" required />
+                    </div>
+                </div>
+            </form>
+            <div class="flex justify-end">
+                <button type="submit" form="syncPathForm" id="saveSyncPathBtn" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-title-sm hover:bg-primary/90 transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Path
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="../js/api.js?v=3"></script>
+    <script src="../js/websocket.js?v=3"></script>
+    <script src="../js/dashboard.js?v=3"></script>
 </body>
 </html>

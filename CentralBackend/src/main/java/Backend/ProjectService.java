@@ -204,6 +204,7 @@ public class ProjectService {
                 sendRequests(team, projectId, userId);
             }
 
+            // 4. Do not create 'latex' folder here. Let initProject handle LaTeX files.
             response.put("success", true);
             response.put("message", "Project created successfully");
             response.put("projectId", projectId);

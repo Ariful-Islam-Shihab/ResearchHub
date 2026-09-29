@@ -13,10 +13,52 @@
     <script src="../js/tailwind-config.js"></script>
     <!-- Global CSS -->
     <link href="../css/global.css" rel="stylesheet"/>
+    <!-- CodeMirror 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/stex/stex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/brace-fold.min.js"></script>
     <style>
         .tab-content { display: none; }
-        .tab-content.active { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+        .tab-content.active { display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%; }
         .table-row:hover { background-color: rgba(255,255,255,0.03); }
+        /* CodeMirror overrides for dark theme */
+        .CodeMirror { height: 100% !important; font-family: 'JetBrains Mono', monospace !important; font-size: 13px; background: var(--surface-container-lowest, #0e1117) !important; }
+        .CodeMirror-gutters { background: var(--surface-container, #1a1d24) !important; border-right: 1px solid var(--outline-variant, #2d3139) !important; }
+        .CodeMirror-linenumber { color: var(--outline, #555) !important; }
+        .cm-s-material-darker .CodeMirror-activeline-background { background: rgba(255,255,255,0.03) !important; }
+        /* Split gutter (Stitch design) */
+        .split-gutter { transition: background-color 0.2s ease; }
+        .split-gutter:hover { background-color: #4F46E5 !important; }
+        /* Custom scrollbars (Stitch design) */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #121316; }
+        ::-webkit-scrollbar-thumb { background: #343538; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #464555; }
+        /* File tree items */
+        .file-tree-item { display: flex; align-items: center; gap: 4px; padding: 2px 4px; cursor: pointer; border-radius: 2px; color: var(--on-surface-variant, #c7c4d8); transition: background-color 0.1s; }
+        .file-tree-item:hover { background: var(--surface-container, #1f1f23); }
+        .file-tree-item.active { color: var(--primary, #c3c0ff); background: var(--surface-container, #1f1f23); }
+        .file-tree-item .close-btn { opacity: 0; transition: opacity 0.15s; }
+        .file-tree-item:hover .close-btn { opacity: 1; }
+        /* Editor tab styling (Stitch design) */
+        .editor-tab { display: flex; align-items: center; gap: 4px; padding: 4px 12px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 16px; color: var(--on-surface-variant, #c7c4d8); transition: all 0.1s; white-space: nowrap; border-bottom: 2px solid transparent; }
+        .editor-tab:hover { background: var(--surface-container-lowest, #0d0e11); color: var(--on-surface, #e3e2e6); }
+        .editor-tab.active { color: var(--primary, #c3c0ff); background: var(--surface-container-lowest, #0d0e11); border-bottom-color: var(--primary, #c3c0ff); }
+        .editor-tab .tab-close { opacity: 0; transition: opacity 0.15s; }
+        .editor-tab:hover .tab-close, .editor-tab.active .tab-close { opacity: 1; }
+        .editor-tab .tab-dot { display: none; }
+        .editor-tab.dirty .tab-dot { display: inline-block; }
+        .editor-tab.dirty .tab-close { display: none; }
     </style>
 </head>
 <body class="flex h-screen w-screen overflow-hidden text-body-base font-body-base bg-surface-container-lowest text-on-surface">
@@ -60,12 +102,12 @@
     </div>
 
     <!-- Left Sidebar (Project Nav) -->
-    <nav class="h-screen w-panel-sidebar bg-surface-container-low border-r border-outline-variant flex flex-col py-lg flex-shrink-0 z-10">
+    <nav id="projectSidebar" class="h-screen w-panel-sidebar bg-surface-container-low border-r border-outline-variant flex flex-col py-lg flex-shrink-0 z-10 transition-all duration-300 overflow-hidden">
         <!-- Back to Projects -->
         <div class="px-md mb-md">
             <a href="dashboard.html" class="flex items-center gap-sm text-on-surface-variant hover:text-primary transition-colors font-body-dense text-body-dense group">
                 <span class="material-symbols-outlined text-[16px]">arrow_back</span>
-                <span>All Projects</span>
+                <span class="sidebar-text">All Projects</span>
             </a>
         </div>
         <div class="px-md mb-lg border-t border-outline-variant pt-md">
@@ -73,7 +115,7 @@
                 <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center shrink-0">
                     <span class="material-symbols-outlined text-on-primary-container text-[18px]">science</span>
                 </div>
-                <div class="overflow-hidden">
+                <div class="overflow-hidden sidebar-text">
                     <h1 id="sidebarProjectName" class="font-title-sm text-title-sm text-on-surface truncate">Loading...</h1>
                     <span id="sidebarProjectStatus" class="font-label-caps text-label-caps text-primary">ACTIVE</span>
                 </div>
@@ -83,27 +125,27 @@
         <div class="flex-1 overflow-y-auto px-xs flex flex-col gap-[2px]">
             <a id="tab-btn-overview" href="#" onclick="switchTab('overview'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm bg-primary-container/10 border-l-2 border-primary text-primary font-title-sm text-title-sm rounded-r hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
                 <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">dashboard</span>
-                Overview
+                <span class="sidebar-text">Overview</span>
             </a>
             <a id="tab-btn-members" href="#" onclick="switchTab('members'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
                 <span class="material-symbols-outlined text-[18px]">group</span>
-                Members
+                <span class="sidebar-text">Members</span>
             </a>
             <a id="tab-btn-files" href="#" onclick="switchTab('files'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
                 <span class="material-symbols-outlined text-[18px]">folder_open</span>
-                Files
+                <span class="sidebar-text">Files</span>
             </a>
             <a id="tab-btn-datasets" href="#" onclick="switchTab('datasets'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
                 <span class="material-symbols-outlined text-[18px]">database</span>
-                Datasets
+                <span class="sidebar-text">Datasets</span>
             </a>
             <a id="tab-btn-tasks" href="#" onclick="switchTab('tasks'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
                 <span class="material-symbols-outlined text-[18px]">assignment</span>
-                Tasks
+                <span class="sidebar-text">Tasks</span>
             </a>
             <a id="tab-btn-discussion" href="#" onclick="switchTab('discussion'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
                 <span class="material-symbols-outlined text-[18px]">forum</span>
-                Discussion
+                <span class="sidebar-text">Discussion</span>
             </a>
         </div>
     </nav>
@@ -113,6 +155,9 @@
         <!-- Top App Bar -->
         <header class="flex justify-between items-center w-full px-lg h-[48px] bg-surface border-b border-outline-variant flex-shrink-0">
             <div class="flex items-center gap-md">
+                <button id="headerSidebarToggle" onclick="toggleSidebar()" class="text-on-surface-variant hover:text-on-surface p-xs rounded hover:bg-surface-container-high transition-colors" title="Toggle Sidebar">
+                    <span class="material-symbols-outlined text-[20px]">menu_open</span>
+                </button>
                 <span id="topbarBreadcrumb" class="font-body-dense text-body-dense text-on-surface-variant">Loading project...</span>
                 <span class="text-outline-variant">·</span>
                 <span id="topbarTabName" class="font-title-sm text-title-sm text-on-surface">Overview</span>
@@ -327,11 +372,139 @@
                 </div>
             </div>
 
-            <!-- ══════════════════ FILES TAB (Coming Soon) ══════════════════ -->
-            <div id="tab-files" class="tab-content items-center justify-center gap-md">
-                <span class="material-symbols-outlined text-[64px] text-outline">folder_open</span>
-                <h2 class="font-headline-md text-headline-md text-on-surface">Files</h2>
-                <p class="font-body-base text-body-base text-on-surface-variant">File management coming soon.</p>
+            <!-- ══════════════════ FILES TAB — LaTeX IDE ══════════════════ -->
+            <div id="tab-files" class="tab-content absolute top-[48px] inset-x-0 bottom-0 bg-surface-container-lowest z-10">
+                <!-- IDE Toolbar (matches Stitch: Compile, Save, History, Zoom) -->
+                <div class="bg-surface h-[40px] border-b border-outline-variant flex items-center px-sm gap-sm flex-shrink-0">
+                    <button id="compileBtn" onclick="compileLatex()" class="bg-primary-container text-on-primary-container h-[28px] px-md rounded flex items-center gap-xs font-title-sm text-title-sm hover:opacity-90 active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                        Compile
+                    </button>
+                    <button onclick="saveCurrentFile()" class="h-[28px] px-sm rounded flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface border border-transparent hover:border-outline-variant font-body-dense text-body-dense transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">save</span>
+                        Save
+                    </button>
+                    <button onclick="showVersionHistory()" class="h-[28px] px-sm rounded flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface border border-transparent hover:border-outline-variant font-body-dense text-body-dense transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">history</span>
+                        History
+                    </button>
+                    <div class="w-px h-[20px] bg-outline-variant mx-xs"></div>
+                    <select id="compilerSelect" class="h-[26px] px-sm bg-surface-container-lowest border border-outline-variant rounded text-on-surface font-code-sm text-[11px] focus:outline-none focus:border-primary cursor-pointer">
+                        <option value="pdflatex">pdflatex</option>
+                    </select>
+                    <div class="flex-1"></div>
+                    <!-- Compile status badge -->
+                    <div id="compileStatusBadge" class="flex items-center gap-xs bg-surface-container-lowest border border-outline-variant rounded-full px-sm py-[2px] font-label-caps text-label-caps">
+                        <span class="w-[6px] h-[6px] rounded-full bg-outline"></span>
+                        <span class="text-on-surface-variant">Ready</span>
+                    </div>
+                </div>
+
+                <!-- Multi-pane IDE Container -->
+                <div class="flex-1 flex overflow-hidden min-h-0">
+                    <!-- Panel 1: File Tree (Explorer) -->
+                    <div class="w-[220px] flex-shrink-0 bg-surface-dim border-r border-outline-variant flex flex-col">
+                        <div class="h-[32px] bg-surface flex items-center justify-between px-sm flex-shrink-0">
+                            <span class="text-title-sm font-title-sm text-on-surface uppercase tracking-wider text-[10px]">Project Explorer</span>
+                            <div class="flex items-center gap-xs">
+                                <button onclick="createNewFile(false)" class="flex items-center justify-center w-[22px] h-[22px] rounded hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="New File">
+                                    <span class="material-symbols-outlined text-[14px]">note_add</span>
+                                </button>
+                                <button onclick="createNewFile(true)" class="flex items-center justify-center w-[22px] h-[22px] rounded hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="New Folder">
+                                    <span class="material-symbols-outlined text-[14px]">create_new_folder</span>
+                                </button>
+                                <button onclick="loadFileTree()" class="flex items-center justify-center w-[22px] h-[22px] rounded hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Refresh">
+                                    <span class="material-symbols-outlined text-[14px]">refresh</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="fileTreeContainer" class="flex-1 overflow-y-auto p-sm font-code-sm text-code-sm">
+                            <!-- File tree rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Gutter (draggable divider) -->
+                    <div class="w-[4px] split-gutter bg-surface-container-highest hover:bg-primary cursor-col-resize transition-colors flex-shrink-0"></div>
+
+                    <!-- Panel 2: Code Editor -->
+                    <div class="flex-1 flex flex-col min-w-0 bg-surface-container-lowest relative">
+                        <!-- File Tabs -->
+                        <div id="fileTabsContainer" class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center px-sm gap-sm overflow-x-auto flex-shrink-0" style="scrollbar-width: thin;">
+                            <!-- Tabs rendered by JS -->
+                        </div>
+
+                        <!-- Editor area -->
+                        <div class="flex-1 overflow-hidden relative">
+                            <div id="editorPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-md text-center z-10 bg-surface-container-lowest">
+                                <span class="material-symbols-outlined text-[56px] text-outline/30">functions</span>
+                                <h3 class="font-headline-md text-headline-md text-on-surface-variant">LaTeX Editor</h3>
+                                <p class="font-body-base text-body-base text-on-surface-variant/60 max-w-[320px]">Open a file from the Project Explorer to begin editing, or create a new file to get started.</p>
+                                <div class="flex gap-lg mt-md">
+                                    <div class="flex items-center gap-xs">
+                                        <kbd class="px-xs py-[2px] bg-surface-container border border-outline-variant rounded text-[11px] font-code-sm text-on-surface-variant">Ctrl+S</kbd>
+                                        <span class="text-[11px] text-on-surface-variant">Save</span>
+                                    </div>
+                                    <div class="flex items-center gap-xs">
+                                        <kbd class="px-xs py-[2px] bg-surface-container border border-outline-variant rounded text-[11px] font-code-sm text-on-surface-variant">Ctrl+B</kbd>
+                                        <span class="text-[11px] text-on-surface-variant">Compile</span>
+                                    </div>
+                                    <div class="flex items-center gap-xs">
+                                        <kbd class="px-xs py-[2px] bg-surface-container border border-outline-variant rounded text-[11px] font-code-sm text-on-surface-variant">Ctrl+P</kbd>
+                                        <span class="text-[11px] text-on-surface-variant">Preview</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="editorContainer" class="absolute inset-0"></div>
+                        </div>
+
+                        <!-- Status bar for editor (matches Stitch) -->
+                        <div id="editorStatusBar" class="h-[24px] bg-surface border-t border-outline-variant flex items-center px-sm text-code-sm font-code-sm text-on-surface-variant justify-between flex-shrink-0">
+                            <span id="editorStatusLeft">UTF-8 | LaTeX</span>
+                            <span id="editorStatusRight" class="flex items-center gap-xs text-primary">
+                                <span class="w-[8px] h-[8px] rounded-full bg-primary inline-block"></span> Sync Active
+                            </span>
+                        </div>
+
+                        <!-- Compiler Log Panel (togglable) -->
+                        <div id="compilerLogPanel" class="h-[180px] shrink-0 border-t border-outline-variant bg-surface-container flex flex-col hidden">
+                            <div class="flex items-center justify-between px-sm py-xs border-b border-outline-variant flex-shrink-0">
+                                <span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-[14px]">terminal</span> COMPILER OUTPUT
+                                </span>
+                                <button onclick="toggleCompilerLog()" class="text-on-surface-variant hover:text-on-surface">
+                                    <span class="material-symbols-outlined text-[14px]">close</span>
+                                </button>
+                            </div>
+                            <pre id="compilerLogContent" class="flex-1 overflow-auto p-sm font-code-sm text-[11px] text-on-surface-variant whitespace-pre-wrap">Ready to compile.</pre>
+                        </div>
+                    </div>
+
+                    <!-- Gutter (draggable divider) -->
+                    <div class="w-[4px] split-gutter bg-surface-container-highest hover:bg-primary cursor-col-resize transition-colors flex-shrink-0"></div>
+
+                    <!-- Panel 3: PDF Preview (matches Stitch) -->
+                    <div id="pdfPreviewPanel" class="w-[450px] flex-shrink-0 bg-surface-dim flex flex-col border-l border-outline-variant">
+                        <div class="h-[32px] bg-surface border-b border-outline-variant flex items-center justify-between px-sm flex-shrink-0">
+                            <span class="text-title-sm font-title-sm text-on-surface flex items-center gap-xs">
+                                <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                                Preview
+                            </span>
+                            <div class="flex items-center gap-sm">
+                                <button onclick="compileLatex()" class="flex items-center gap-xs px-2 py-1 bg-primary text-on-primary rounded hover:bg-primary/90 transition-colors text-xs font-medium" title="Recompile Document">
+                                    <span class="material-symbols-outlined text-[14px]">play_arrow</span> Recompile
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-md bg-[#262830] flex justify-center">
+                            <!-- PDF will load here -->
+                            <div id="pdfPlaceholder" class="flex flex-col items-center justify-center gap-md text-center">
+                                <span class="material-symbols-outlined text-[48px] text-outline/30">picture_as_pdf</span>
+                                <p class="font-body-base text-body-base text-on-surface-variant/60">Compile your document to see the PDF preview</p>
+                            </div>
+                            <iframe id="pdfPreviewFrame" class="bg-white w-full min-h-[500px] shadow-lg hidden" src="about:blank"></iframe>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- ══════════════════ TASKS TAB ══════════════════ -->
@@ -755,9 +928,62 @@
     <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
     <script src="../js/websocket.js"></script>
+    <script src="../js/files.js"></script>
+    <script src="../js/latex.js"></script>
     <script src="../js/project.js"></script>
     <script src="../js/tasks.js"></script>
     <script src="../js/datasets.js"></script>
+
+    <!-- ══════════════════ VERSION HISTORY MODAL ══════════════════ -->
+    <div id="versionHistoryModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg max-h-[80vh]">
+            <div class="flex justify-between items-center">
+                <h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-primary">history</span>
+                    Version History
+                </h2>
+                <button onclick="closeVersionHistory()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="font-body-dense text-body-dense text-on-surface-variant">
+                File: <strong id="versionHistoryFileName"></strong>
+            </p>
+            <div id="versionHistoryList" class="flex-1 overflow-y-auto border border-outline-variant rounded-lg">
+                <!-- Versions rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ CONFLICT RESOLUTION MODAL ══════════════════ -->
+    <div id="conflictModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg">
+            <div class="flex items-start gap-md">
+                <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-warning text-[20px]">sync_problem</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-md text-headline-md text-on-surface">Conflict Detected</h2>
+                    <p class="font-body-base text-body-base text-on-surface-variant mt-xs">
+                        <strong id="conflictFileName"></strong> has been modified by another user.
+                    </p>
+                    <p class="font-body-dense text-body-dense text-on-surface-variant mt-sm">
+                        Server version: <strong id="conflictServerVersion"></strong> |
+                        Your version: <strong id="conflictClientVersion"></strong>
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-sm">
+                <button onclick="document.getElementById('conflictModal').style.display='none'" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button onclick="resolveConflict('server')" class="h-[36px] px-md rounded bg-surface-container text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">cloud_download</span> Use Server Version
+                </button>
+                <button onclick="resolveConflict('client')" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-[12px] hover:opacity-90 transition-opacity flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">cloud_upload</span> Keep My Changes
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- ══════════════════ ADD DATASET MODAL ══════════════════ -->
     <div id="addDatasetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
@@ -967,5 +1193,68 @@
             </div>
         </div>
     </div>
+    
+    <!-- Sync Path Modal -->
+    <div id="syncPathModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col scale-95 opacity-0 transition-all duration-200" id="syncPathModalContent">
+            <div class="flex items-center space-x-md mb-md">
+                <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container text-[24px]">folder_managed</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Setup Workspace</h2>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Required for offline access and syncing.</p>
+                </div>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface mb-md">Please specify a local folder path where ResearchHub will store and sync all your project files (datasets, latex files).</p>
+            <form id="syncPathForm" class="flex flex-col space-y-md mb-lg">
+                <div class="flex flex-col space-y-xs">
+                    <label class="font-title-sm text-title-sm text-on-surface" for="localSyncPathInput">Local Directory Path <span class="text-error">*</span></label>
+                        <input class="h-[36px] flex-1 bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary" id="localSyncPathInput" placeholder="e.g. C:\Users\88016\Desktop\ResearchHub" type="text" required />
+                    </div>
+                </div>
+            </form>
+            <div class="flex justify-end">
+                <button type="submit" form="syncPathForm" id="saveSyncPathBtn" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-title-sm hover:bg-primary/90 transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Path
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="../js/api.js?v=3"></script>
+    <script src="../js/websocket.js?v=3"></script>
+    <script src="../js/project.js?v=3"></script>
+    <script src="../js/latex.js?v=3"></script>
+    <script src="../js/files.js?v=3"></script>
+    <script src="../js/datasets.js?v=3"></script>
+    <script src="../js/tasks.js?v=3"></script>
+
+    <script>
+        // Sidebar Toggle Logic
+        let isSidebarCollapsed = false;
+        function toggleSidebar() {
+            const sidebar = document.getElementById('projectSidebar');
+            const toggleIcon = document.querySelector('#headerSidebarToggle .material-symbols-outlined');
+            const texts = document.querySelectorAll('.sidebar-text');
+            isSidebarCollapsed = !isSidebarCollapsed;
+            
+            if (isSidebarCollapsed) {
+                // Collapse
+                sidebar.classList.remove('w-panel-sidebar');
+                sidebar.classList.add('w-[60px]'); // Keep it slim instead of w-0 for better UX, or w-0 if preferred. Let's make it a narrow icon-only bar.
+                texts.forEach(el => el.classList.add('hidden'));
+                if (toggleIcon) toggleIcon.textContent = 'menu';
+            } else {
+                // Expand
+                sidebar.classList.add('w-panel-sidebar');
+                sidebar.classList.remove('w-[60px]');
+                texts.forEach(el => el.classList.remove('hidden'));
+                if (toggleIcon) toggleIcon.textContent = 'menu_open';
+            }
+        }
+    </script>
 </body>
 </html>

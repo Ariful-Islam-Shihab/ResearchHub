@@ -19,6 +19,63 @@ document.addEventListener('DOMContentLoaded', () => {
         userNameDisplay.textContent = currentUser.name || currentUser.email || 'Researcher';
     }
 
+    // Check for local_sync_path
+    if (!currentUser.local_sync_path || currentUser.local_sync_path === 'null') {
+        const syncPathModal = document.getElementById('syncPathModal');
+        const syncPathModalContent = document.getElementById('syncPathModalContent');
+        if (syncPathModal && syncPathModalContent) {
+            syncPathModal.classList.remove('hidden');
+            syncPathModal.classList.add('flex');
+            // Remove opacity-0 permanently for testing just in case
+            syncPathModalContent.classList.remove('opacity-0', 'scale-95');
+            syncPathModalContent.classList.add('opacity-100', 'scale-100');
+        } else {
+            alert("Modal elements not found in HTML!");
+        }
+    }
+
+    // Handle Sync Path Form Submission
+    const syncPathForm = document.getElementById('syncPathForm');
+    if (syncPathForm) {
+        syncPathForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const path = document.getElementById('localSyncPathInput').value.trim();
+            if (!path) return;
+            
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/users/${currentUser.id}/sync-path`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local_sync_path: path })
+                });
+                const responseData = await response.json();
+                if (responseData.success) {
+                    // update local storage
+                    currentUser.local_sync_path = path;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    // Hide Modal
+                    const syncPathModal = document.getElementById('syncPathModal');
+                    const syncPathModalContent = document.getElementById('syncPathModalContent');
+                    syncPathModalContent.classList.remove('scale-100', 'opacity-100');
+                    syncPathModalContent.classList.add('scale-95', 'opacity-0');
+                    
+                    setTimeout(() => {
+                        syncPathModal.classList.remove('flex');
+                        syncPathModal.classList.add('hidden');
+                    }, 200); // match transition duration
+                } else {
+                    alert('Error saving sync path: ' + response.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while saving the sync path.');
+            }
+        });
+    }
+
+
+
     // 2. Logout functionality
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -415,6 +472,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             if (result.success) {
+                // Initialize local directories if sync path is set
+                if (currentUser.local_sync_path) {
+                    try {
+                        let localBaseUrl = API_CONFIG.getLocalBaseUrl();
+                        const localRes = await fetch(localBaseUrl + '/init-project', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                basePath: currentUser.local_sync_path,
+                                projectName: projectData.title
+                            })
+                        });
+                        const localData = await localRes.json();
+                        if (!localData.success) {
+                            console.warn('Local initialization failed:', localData.message);
+                        }
+                    } catch (err) {
+                        console.error('Could not connect to local backend for initialization:', err);
+                    }
+                }
+                
                 closeModal();
                 fetchProjects(); // Refresh the list
             } else {
@@ -736,7 +814,6 @@ window.unarchiveProject = async function(projectId, event) {
 };
 
 // Start initialization
-document.addEventListener('DOMContentLoaded', initDashboard);
 
 let projectToDelete = null;
 

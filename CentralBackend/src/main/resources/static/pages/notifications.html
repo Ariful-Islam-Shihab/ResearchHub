@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ResearchHub - Notifications</title>
+    <meta name="description" content="View and manage your ResearchHub project invitations."/>
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="../js/tailwind-config.js"></script>
+    <!-- Global CSS -->
+    <link href="../css/global.css" rel="stylesheet"/>
+</head>
+<body class="flex h-screen w-screen overflow-hidden text-body-base font-body-base bg-surface-container-lowest text-on-surface">
+
+    <!-- Activity Bar (Dock) -->
+    <div class="w-dock-width h-full bg-surface-container flex flex-col items-center py-lg border-r border-outline-variant flex-shrink-0 z-10">
+        <div class="mb-xl">
+            <span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform" style="font-variation-settings: 'FILL' 1;">science</span>
+        </div>
+        <div class="flex flex-col gap-lg flex-grow">
+            <a href="dashboard.html" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    My Projects
+                </div>
+            </a>
+            <!-- Active: Notifications -->
+            <a href="notifications.html" class="p-xs bg-primary-container/20 rounded border-l-2 border-primary cursor-pointer flex items-center justify-center w-8 h-8 group relative">
+                <span class="material-symbols-outlined text-primary" data-icon="notifications" style="font-variation-settings: 'FILL' 1;">notifications</span>
+                <div id="notificationBadge" class="absolute top-0 right-0 w-3 h-3 bg-error rounded-full border-2 border-surface-container hidden"></div>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Notifications
+                </div>
+            </a>
+        </div>
+        <div class="flex flex-col gap-lg mt-auto">
+            <a href="profile.html" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Profile
+                </div>
+            </a>
+            <div id="logoutBtn" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative">
+                <span class="material-symbols-outlined" data-icon="logout">logout</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Logout
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col h-screen min-w-0 bg-surface-container-lowest relative">
+        <!-- TopAppBar -->
+        <header class="flex justify-between items-center w-full px-lg h-[48px] bg-surface border-b border-outline-variant flex-shrink-0">
+            <div class="flex items-center gap-md">
+                <h2 class="font-title-sm text-title-sm font-bold text-on-surface flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary" style="font-variation-settings: 'FILL' 1;">notifications</span>
+                    Notifications
+                </h2>
+            </div>
+            <div class="flex items-center gap-md">
+                <div id="offlineBadge" class="hidden items-center gap-xs px-sm h-[28px] bg-surface-container-high text-on-surface-variant border border-outline-variant rounded font-code-sm text-code-sm transition-all duration-300">
+                    <span class="material-symbols-outlined text-[16px]">cloud_off</span>
+                    Offline
+                </div>
+            </div>
+        </header>
+
+        <!-- Content Area -->
+        <div class="flex-1 overflow-auto">
+            <div class="max-w-3xl mx-auto px-lg py-xl">
+
+                <!-- Tab Bar -->
+                <div class="flex items-center gap-xl border-b border-outline-variant mb-lg">
+                    <button id="tabReceived"
+                        class="flex items-center gap-xs pb-sm font-title-sm text-title-sm border-b-2 border-primary text-primary transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">inbox</span>
+                        Received
+                        <span id="notificationCountDisplay" class="ml-xs px-xs py-[1px] bg-primary text-on-primary font-label-caps text-label-caps rounded-full">0</span>
+                    </button>
+                    <button id="tabSent"
+                        class="flex items-center gap-xs pb-sm font-title-sm text-title-sm border-b-2 border-transparent text-on-surface-variant hover:text-on-surface transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">outbox</span>
+                        Sent
+                        <span id="sentCountDisplay" class="ml-xs px-xs py-[1px] bg-surface-container-highest text-on-surface-variant font-label-caps text-label-caps rounded-full">0</span>
+                    </button>
+                </div>
+
+                <!-- Received Panel -->
+                <div id="receivedPanel">
+                    <div id="notificationsList" class="flex flex-col gap-md">
+                        <div class="p-xl border border-outline-variant border-dashed rounded-lg text-center text-on-surface-variant font-body-base text-body-base">
+                            Loading notifications...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sent Panel (hidden by default) -->
+                <div id="sentPanel" class="hidden">
+                    <div id="sentList" class="flex flex-col gap-md">
+                        <div class="p-xl border border-outline-variant border-dashed rounded-lg text-center text-on-surface-variant font-body-base text-body-base">
+                            Loading sent invitations...
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <script src="../js/api.js"></script>
+    <script src="../js/notifications.js"></script>
+</body>
+</html>

@@ -101,6 +101,25 @@ public class TaskDetailService {
         Map<String, Object> response = new HashMap<>();
         try {
             if (payload.containsKey("is_completed")) {
+                List<Map<String, Object>> existingTask = db.queryForList("SELECT assigned_to FROM tasks WHERE id = ?", taskId);
+                if (existingTask.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "Task not found.");
+                    return response;
+                }
+                
+                Object assignedToObj = existingTask.get(0).get("assigned_to");
+                Integer assignedTo = assignedToObj != null ? ((Number) assignedToObj).intValue() : null;
+                
+                Object updaterIdObj = payload.get("updaterId");
+                Integer updaterId = updaterIdObj != null ? Integer.parseInt(updaterIdObj.toString()) : null;
+
+                if (assignedTo == null || !assignedTo.equals(updaterId)) {
+                    response.put("success", false);
+                    response.put("message", "Only the assigned individual can change subtask status.");
+                    return response;
+                }
+
                 boolean isCompleted = Boolean.parseBoolean(payload.get("is_completed").toString());
                 db.update("UPDATE task_subtasks SET is_completed = ? WHERE id = ? AND task_id = ?", 
                         isCompleted, subtaskId, taskId);
@@ -149,13 +168,29 @@ public class TaskDetailService {
                 return response;
             }
 
-            db.update("INSERT INTO task_updates (task_id, user_id, message, status_change) VALUES (?, ?, ?, ?)",
-                    taskId, userId, message, statusChange);
-            
             // If there's a status change, update the main task as well
             if (statusChange != null && !statusChange.isEmpty()) {
+                List<Map<String, Object>> existingTask = db.queryForList("SELECT assigned_to FROM tasks WHERE id = ?", taskId);
+                if (existingTask.isEmpty()) {
+                    response.put("success", false);
+                    response.put("message", "Task not found.");
+                    return response;
+                }
+                
+                Object assignedToObj = existingTask.get(0).get("assigned_to");
+                Integer assignedTo = assignedToObj != null ? ((Number) assignedToObj).intValue() : null;
+
+                if (assignedTo == null || !assignedTo.equals(userId)) {
+                    response.put("success", false);
+                    response.put("message", "Only the assigned individual can change the task status.");
+                    return response;
+                }
+                
                 db.update("UPDATE tasks SET status = ? WHERE id = ?", statusChange, taskId);
             }
+
+            db.update("INSERT INTO task_updates (task_id, user_id, message, status_change) VALUES (?, ?, ?, ?)",
+                    taskId, userId, message, statusChange);
 
             int updateId = db.queryForObject("SELECT LAST_INSERT_ID()", Integer.class);
             List<Map<String, Object>> update = db.queryForList(
