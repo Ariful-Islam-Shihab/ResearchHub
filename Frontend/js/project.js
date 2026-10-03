@@ -17,10 +17,61 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!userJson) { window.location.href = 'login.html'; return; }
     currentUser = JSON.parse(userJson);
 
+    // Check for local_sync_path
+    if (!currentUser.local_sync_path || currentUser.local_sync_path === 'null') {
+        const syncPathModal = document.getElementById('syncPathModal');
+        const syncPathModalContent = document.getElementById('syncPathModalContent');
+        if (syncPathModal && syncPathModalContent) {
+            syncPathModal.classList.remove('hidden');
+            syncPathModal.classList.add('flex');
+            syncPathModalContent.classList.remove('opacity-0', 'scale-95');
+            syncPathModalContent.classList.add('opacity-100', 'scale-100');
+        }
+    }
+
+    // Handle Sync Path Form Submission
+    const syncPathForm = document.getElementById('syncPathForm');
+    if (syncPathForm) {
+        syncPathForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const path = document.getElementById('localSyncPathInput').value.trim();
+            if (!path) return;
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/users/${currentUser.id}/sync-path`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local_sync_path: path })
+                });
+                const responseData = await response.json();
+                if (responseData.success) {
+                    currentUser.local_sync_path = path;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    const syncPathModal = document.getElementById('syncPathModal');
+                    const syncPathModalContent = document.getElementById('syncPathModalContent');
+                    syncPathModalContent.classList.remove('scale-100', 'opacity-100');
+                    syncPathModalContent.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        syncPathModal.classList.remove('flex');
+                        syncPathModal.classList.add('hidden');
+                    }, 200);
+                } else {
+                    alert('Error saving sync path: ' + response.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while saving the sync path.');
+            }
+        });
+    }
+
     // Parse ?id= from URL
     const params = new URLSearchParams(window.location.search);
     projectId = parseInt(params.get('id'));
     if (!projectId) { window.location.href = 'dashboard.html'; return; }
+    
+    if (typeof updateChatProject === 'function') {
+        updateChatProject(projectId);
+    }
 
     updateOnlineStatus();
     window.addEventListener('online', updateOnlineStatus);
@@ -30,6 +81,72 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.removeItem('user');
         window.location.href = 'login.html';
     });
+
+    // Check for local_sync_path
+    if (!currentUser.local_sync_path || currentUser.local_sync_path === 'null') {
+        const syncPathModal = document.getElementById('syncPathModal');
+        const syncPathModalContent = document.getElementById('syncPathModalContent');
+        if (syncPathModal && syncPathModalContent) {
+            syncPathModal.classList.remove('hidden');
+            syncPathModal.classList.add('flex');
+            syncPathModalContent.classList.remove('opacity-0', 'scale-95');
+            syncPathModalContent.classList.add('opacity-100', 'scale-100');
+        } else {
+            alert("Modal elements not found in HTML!");
+        }
+    }
+
+    // Handle Sync Path Form Submission
+    const syncPathForm = document.getElementById('syncPathForm');
+    if (syncPathForm) {
+        syncPathForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const path = document.getElementById('localSyncPathInput').value.trim();
+            if (!path) return;
+            
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/users/${currentUser.id}/sync-path`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local_sync_path: path })
+                });
+                const responseData = await response.json();
+                if (responseData.success) {
+                    // update local storage
+                    currentUser.local_sync_path = path;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    // Hide Modal
+                    const syncPathModal = document.getElementById('syncPathModal');
+                    const syncPathModalContent = document.getElementById('syncPathModalContent');
+                    syncPathModalContent.classList.remove('scale-100', 'opacity-100');
+                    syncPathModalContent.classList.add('scale-95', 'opacity-0');
+                    
+                    setTimeout(() => {
+                        syncPathModal.classList.remove('flex');
+                        syncPathModal.classList.add('hidden');
+                        
+                        // If project is already loaded, init it now!
+                        if (projectData) {
+                            let localBaseUrl = API_CONFIG.getLocalBaseUrl();
+                            fetch(localBaseUrl + '/init-project', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ basePath: currentUser.local_sync_path, projectName: projectData.title, projectId: projectId, userId: currentUser.id })
+                            }).catch(e => console.error(e));
+                        }
+                    }, 200);
+                } else {
+                    alert('Failed to save path: ' + responseData.message);
+                }
+            } catch (err) {
+                console.error('Error saving sync path:', err);
+                alert('An error occurred. Please ensure CentralBackend is running.');
+            }
+        });
+    }
+
+
 
     // Invite panel controls
     document.getElementById('addMemberBtn').addEventListener('click', toggleAddMemberPanel);
@@ -46,6 +163,12 @@ document.addEventListener('DOMContentLoaded', () => {
         memberToRemove = null;
     });
     document.getElementById('confirmRemoveBtn').addEventListener('click', confirmRemoveMember);
+
+    // Edit project modal
+    document.getElementById('editProjectBtn').addEventListener('click', openEditProjectModal);
+    document.getElementById('closeEditProjectBtn').addEventListener('click', closeEditProjectModal);
+    document.getElementById('cancelEditProjectBtn').addEventListener('click', closeEditProjectModal);
+    document.getElementById('editProjectForm').addEventListener('submit', submitEditProject);
 
     // Load data
     loadProject();
@@ -87,6 +210,33 @@ async function loadProject() {
         if (isOwner) {
             loadPendingInvitations();
         }
+        
+        // Initialize local directories if sync path is set
+        if (currentUser.local_sync_path) {
+            try {
+                let localBaseUrl = API_CONFIG.getLocalBaseUrl();
+                fetch(localBaseUrl + '/init-project', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        basePath: currentUser.local_sync_path,
+                        projectName: projectData.title,
+                        projectId: projectId,
+                        userId: currentUser.id
+                    })
+                }).catch(err => console.error('Local backend not reachable', err));
+            } catch (err) {
+                // Ignore
+            }
+        }
+
+        // Auto-load datasets and trigger sync on project open
+        // This ensures files are auto-downloaded for ALL users when they open the project
+        loadDatasets().then(() => {
+            if (currentUser.local_sync_path) {
+                autoSyncDatasets();
+            }
+        }).catch(err => console.error('Auto-load datasets error:', err));
     } catch (err) {
         console.error('Failed to load project:', err);
         showError('Failed to load project. Is the server running?');
@@ -110,10 +260,17 @@ function renderProjectInfo() {
         const ownerBadge = document.getElementById('ownerBadge');
         ownerBadge.classList.remove('hidden');
         ownerBadge.classList.add('flex');
+        
+        const editBtn = document.getElementById('editProjectBtn');
+        if (editBtn) {
+            editBtn.classList.remove('hidden');
+            editBtn.classList.add('flex');
+        }
     }
 
     // Overview tab
     document.getElementById('overviewTitle').textContent = p.title;
+    document.getElementById('overviewDomain').textContent = p.domain && p.domain !== 'Not specified' ? p.domain : 'Not specified';
     document.getElementById('overviewDesc').textContent = p.description || 'No description provided.';
     document.getElementById('overviewStatus').innerHTML = `
         <span class="w-[6px] h-[6px] rounded-full bg-primary animate-pulse"></span>${p.status || 'ACTIVE'}`;
@@ -466,7 +623,7 @@ async function confirmRemoveMember() {
 // ─── Tab Switching ────────────────────────────────────────────────────────────
 const TAB_LABELS = {
     overview: 'Overview', members: 'Members',
-    files: 'Files', tasks: 'Tasks', discussion: 'Discussion'
+    files: 'Files', datasets: 'Datasets', tasks: 'Tasks', discussion: 'Discussion'
 };
 
 function switchTab(tab) {
@@ -482,6 +639,27 @@ function switchTab(tab) {
     activeBtn.classList.remove('border-transparent', 'text-on-surface-variant');
 
     document.getElementById('topbarTabName').textContent = TAB_LABELS[tab] || tab;
+
+    // Load discussion messages when switching to discussion tab
+    if (tab === 'discussion') {
+        loadDiscussionMessages();
+        initDiscussionInput();
+    }
+    
+    // Load tasks when switching to tasks tab
+    if (tab === 'tasks') {
+        loadTasks();
+    }
+    
+    // Load datasets when switching to datasets tab
+    if (tab === 'datasets') {
+        loadDatasets();
+    }
+    
+    // Initialize files/LaTeX tab
+    if (tab === 'files') {
+        initFilesTab();
+    }
 }
 
 // ─── Notification Badge ──────────────────────────────────────────────────────
@@ -493,6 +671,206 @@ async function checkPendingNotifications() {
             document.getElementById('notificationBadge').classList.remove('hidden');
         }
     } catch (err) { /* silent */ }
+}
+
+// ─── Discussion ──────────────────────────────────────────────────────────────
+let discussionMessages = [];
+let discussionInputInitialized = false;
+
+async function loadDiscussionMessages() {
+    try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/discussions`);
+        const result = await res.json();
+        if (result.success) {
+            discussionMessages = result.data || [];
+            renderDiscussionMessages();
+        }
+    } catch (err) {
+        console.error('Failed to load discussion messages:', err);
+    }
+}
+
+function renderDiscussionMessages() {
+    const container = document.getElementById('discussionMessages');
+    const emptyState = document.getElementById('discussionEmpty');
+    const countEl = document.getElementById('discussionMsgCount');
+
+    countEl.textContent = `${discussionMessages.length} message${discussionMessages.length !== 1 ? 's' : ''}`;
+
+    if (!discussionMessages.length) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+    }
+
+    emptyState.classList.add('hidden');
+    emptyState.classList.remove('flex');
+
+    // Group messages by date
+    let html = '';
+    let lastDate = '';
+
+    discussionMessages.forEach((msg, idx) => {
+        const msgDate = formatDate(msg.created_at);
+        if (msgDate !== lastDate) {
+            lastDate = msgDate;
+            html += `
+            <div class="flex items-center gap-md my-md">
+                <div class="flex-1 h-px bg-outline-variant"></div>
+                <span class="font-label-caps text-label-caps text-on-surface-variant shrink-0">${escapeHtml(msgDate)}</span>
+                <div class="flex-1 h-px bg-outline-variant"></div>
+            </div>`;
+        }
+
+        const isMe = (msg.user_id == currentUser.id);
+        const initials = getInitials(msg.full_name);
+        const time = formatTime(msg.created_at);
+
+        // Check if previous message is from the same user (collapse avatar)
+        const prevMsg = idx > 0 ? discussionMessages[idx - 1] : null;
+        const sameUserAsPrev = prevMsg && prevMsg.user_id === msg.user_id && formatDate(prevMsg.created_at) === msgDate;
+
+        html += buildMessageHtml(msg, isMe, initials, time, sameUserAsPrev);
+    });
+
+    // Keep the empty state div but hidden, then add messages before it
+    container.innerHTML = html + `
+        <div id="discussionEmpty" class="hidden flex-col items-center justify-center gap-md py-xl">
+            <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
+                <span class="material-symbols-outlined text-outline text-3xl">chat_bubble_outline</span>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface-variant text-center max-w-xs">
+                No messages yet. Start the conversation with your team!
+            </p>
+        </div>`;
+
+    // Auto-scroll to bottom
+    requestAnimationFrame(() => {
+        container.scrollTop = container.scrollHeight;
+    });
+}
+
+function buildMessageHtml(msg, isMe, initials, time, collapsed) {
+    const escapedName = escapeHtml(msg.full_name);
+    const escapedMessage = escapeHtml(msg.message).replace(/\n/g, '<br>');
+    const role = (msg.role || 'member').toLowerCase();
+
+    // Role badge styling
+    const roleBadgeColors = {
+        owner: 'bg-primary-container/20 text-primary',
+        supervisor: 'bg-tertiary-container/30 text-tertiary',
+        teammate: 'bg-secondary-container/30 text-on-surface-variant',
+        member: 'bg-surface-container-highest text-on-surface-variant'
+    };
+    const roleBadgeClass = roleBadgeColors[role] || roleBadgeColors.member;
+    const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
+
+    if (collapsed) {
+        return `
+        <div class="flex items-start gap-md pl-[44px] group" data-msg-id="${msg.id}">
+            <div class="flex-1 min-w-0">
+                <div class="font-body-base text-body-base text-on-surface leading-relaxed">
+                    ${escapedMessage}
+                </div>
+            </div>
+            <span class="font-code-sm text-code-sm text-on-surface-variant opacity-0 group-hover:opacity-60 transition-opacity shrink-0 pt-[2px]">${time}</span>
+        </div>`;
+    }
+
+    return `
+    <div class="flex items-start gap-md mt-md first:mt-0 group" data-msg-id="${msg.id}">
+        <div class="w-8 h-8 rounded-full ${isMe ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-highest text-on-surface-variant'} flex items-center justify-center font-title-sm text-[11px] shrink-0 mt-[2px]">
+            ${initials}
+        </div>
+        <div class="flex-1 min-w-0">
+            <div class="flex items-baseline gap-sm flex-wrap">
+                <span class="font-title-sm text-title-sm ${isMe ? 'text-primary' : 'text-on-surface'}">${escapedName}</span>
+                <span class="px-[6px] py-[1px] rounded ${roleBadgeClass} font-label-caps text-[10px] uppercase tracking-wider">${roleLabel}</span>
+                ${isMe ? '<span class="px-xs py-[1px] rounded bg-primary-container/20 text-primary font-code-sm text-[10px]">You</span>' : ''}
+                <span class="font-code-sm text-code-sm text-on-surface-variant opacity-60">${time}</span>
+            </div>
+            <div class="font-body-base text-body-base text-on-surface leading-relaxed mt-[2px]">
+                ${escapedMessage}
+            </div>
+        </div>
+    </div>`;
+}
+
+function appendDiscussionMessage(msgData) {
+    // Don't append if it already exists
+    if (discussionMessages.find(m => m.id === msgData.id)) return;
+
+    discussionMessages.push(msgData);
+    renderDiscussionMessages();
+}
+
+async function sendDiscussionMessage() {
+    const input = document.getElementById('discussionInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    const sendBtn = document.getElementById('discussionSendBtn');
+    sendBtn.disabled = true;
+
+    try {
+        const res = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/discussions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: currentUser.id, message })
+        });
+        const result = await res.json();
+        if (result.success) {
+            input.value = '';
+            input.style.height = '38px';
+            // Append the new message locally
+            appendDiscussionMessage(result.data);
+        } else {
+            showToast(result.message || 'Failed to send message.', 'error');
+        }
+    } catch (err) {
+        showToast('Network error sending message.', 'error');
+    } finally {
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+
+function initDiscussionInput() {
+    if (discussionInputInitialized) return;
+    discussionInputInitialized = true;
+
+    const input = document.getElementById('discussionInput');
+    const sendBtn = document.getElementById('discussionSendBtn');
+
+    // Set user avatar
+    if (currentUser) {
+        document.getElementById('discussionUserAvatar').textContent = getInitials(currentUser.full_name || currentUser.name || '');
+    }
+
+    // Auto-grow textarea
+    input.addEventListener('input', () => {
+        input.style.height = '38px';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        sendBtn.disabled = !input.value.trim();
+    });
+
+    // Enter to send, Shift+Enter for new line
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (input.value.trim()) {
+                sendDiscussionMessage();
+            }
+        }
+    });
+}
+
+// Called by websocket.js when a new message arrives
+function handleNewMessage(data) {
+    if (data.projectId == projectId) {
+        // Don't duplicate messages we already have
+        appendDiscussionMessage(data.data);
+    }
 }
 
 // ─── Toast Notification ──────────────────────────────────────────────────────
@@ -512,9 +890,64 @@ function showToast(message, type = 'success') {
     setTimeout(() => { container.style.opacity = '0'; setTimeout(() => container.remove(), 300); }, 3000);
 }
 
-function showError(message) {
-    document.getElementById('overviewTitle').textContent = 'Error';
-    document.getElementById('overviewDesc').textContent = message;
+function showError(msg) {
+    alert(msg);
+}
+
+// ─── Edit Project ───────────────────────────────────────────────────────────
+function openEditProjectModal() {
+    if (!projectData) return;
+    document.getElementById('editProjectTitle').value = projectData.title || '';
+    document.getElementById('editProjectDomain').value = projectData.domain && projectData.domain !== 'Not specified' ? projectData.domain : '';
+    document.getElementById('editProjectDesc').value = projectData.description || '';
+    
+    const modal = document.getElementById('editProjectModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeEditProjectModal() {
+    const modal = document.getElementById('editProjectModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+async function submitEditProject(e) {
+    e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Saving...';
+    submitBtn.disabled = true;
+
+    const payload = {
+        userId: currentUser.id,
+        title: document.getElementById('editProjectTitle').value.trim(),
+        domain: document.getElementById('editProjectDomain').value.trim() || 'Not specified',
+        description: document.getElementById('editProjectDesc').value.trim()
+    };
+
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            closeEditProjectModal();
+            // Reload project details to reflect changes
+            loadProject();
+        } else {
+            alert('Failed to update project: ' + result.message);
+        }
+    } catch (err) {
+        console.error('Error updating project:', err);
+        alert('An error occurred while updating the project.');
+    } finally {
+        submitBtn.textContent = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 // ─── Utilities ────────────────────────────────────────────────────────────────
@@ -534,6 +967,14 @@ function formatDate(dateStr) {
     } catch { return dateStr; }
 }
 
+function formatTime(dateStr) {
+    if (!dateStr) return '';
+    try {
+        return new Date(dateStr).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+    } catch { return ''; }
+}
+
 function debounce(fn, ms) {
     let t; return (...args) => { clearTimeout(t); t = setTimeout(() => fn(...args), ms); };
 }
+

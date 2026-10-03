@@ -1,0 +1,43 @@
+/* Global CSS for ResearchHub */
+
+.material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+input:focus-visible {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: inset 0 0 0 1px #4f46e5;
+}
+
+/* Base IDE grid texture for the background canvas */
+body.bg-grid {
+    background-image: radial-gradient(circle at center, #1b1b1f 1px, transparent 1px);
+    background-size: 16px 16px;
+}
+
+/* Custom scrollbar for deep dark UI */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #121316;
+}
+::-webkit-scrollbar-thumb {
+    background: #343538;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #464555;
+}
+
+.split-gutter {
+    width: 4px;
+    cursor: col-resize;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+.split-gutter:hover, .split-gutter:active {
+    background-color: #4F46E5;
+}

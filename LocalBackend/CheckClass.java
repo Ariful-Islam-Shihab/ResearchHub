@@ -1,0 +1,1 @@
+public class CheckClass { public static void main(String[] args) throws Exception { for (java.lang.reflect.Method m : org.springframework.web.socket.client.standard.StandardWebSocketClient.class.getMethods()) { if (m.getName().equals("doHandshake") || m.getName().equals("execute")) { System.out.println(m); } } } }

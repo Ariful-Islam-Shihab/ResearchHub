@@ -1,0 +1,74 @@
+version: '3.8'
+
+services:
+  # ---------------------------------------------------
+  # Client A (Instance 1)
+  # ---------------------------------------------------
+  client-a-localbackend:
+    build: 
+      context: ./LocalBackend
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=3000
+      # Connects to the CentralBackend running on your host machine
+      - CENTRAL_BACKEND_URL=http://host.docker.internal:8080
+      - CENTRAL_CHAT_HOST=host.docker.internal
+      - CENTRAL_CHAT_PORT=9090
+    ports:
+      - "3000:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - localbackend-data-a:/app/data
+
+  client-a-frontend:
+    build: 
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80" # Access Client A via http://localhost:8081
+    depends_on:
+      - client-a-localbackend
+    volumes:
+      - ./Frontend:/usr/share/nginx/html
+      - ./Frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    # Use aliases so Nginx can resolve 'localbackend' to this specific instance
+    links:
+      - client-a-localbackend:localbackend
+
+  # ---------------------------------------------------
+  # Client B (Instance 2)
+  # ---------------------------------------------------
+  client-b-localbackend:
+    build: 
+      context: ./LocalBackend
+      dockerfile: Dockerfile
+    environment:
+      - SERVER_PORT=3000
+      - CENTRAL_BACKEND_URL=http://host.docker.internal:8080
+      - CENTRAL_CHAT_HOST=host.docker.internal
+      - CENTRAL_CHAT_PORT=9090
+    ports:
+      - "3001:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - localbackend-data-b:/app/data
+
+  client-b-frontend:
+    build: 
+      context: ./Frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8082:80" # Access Client B via http://localhost:8082
+    depends_on:
+      - client-b-localbackend
+    volumes:
+      - ./Frontend:/usr/share/nginx/html
+      - ./Frontend/nginx.conf:/etc/nginx/conf.d/default.conf
+    links:
+      - client-b-localbackend:localbackend
+
+volumes:
+  localbackend-data-a:
+  localbackend-data-b:

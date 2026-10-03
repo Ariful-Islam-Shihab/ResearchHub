@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ResearchHub - Sign In</title>
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="../js/tailwind-config.js"></script>
+    
+    <!-- Global CSS -->
+    <link href="../css/global.css" rel="stylesheet"/>
+</head>
+<body class="bg-surface-container-lowest text-on-surface h-screen w-full flex items-center justify-center overflow-hidden font-body-base">
+    <!-- Decorative background elements -->
+    <div class="fixed inset-0 pointer-events-none z-0">
+        <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-primary-container/10 via-background to-background"></div>
+        <div class="absolute bottom-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_bottom_left,_var(--tw-gradient-stops))] from-primary-container/5 via-background to-background"></div>
+    </div>
+    <!-- Sign In Card -->
+    <div class="z-10 w-full max-w-md bg-surface-container rounded-lg border border-outline-variant shadow-[0_8px_30px_rgb(0,0,0,0.4)] p-xl relative">
+        <!-- Header -->
+        <div class="text-center mb-xl">
+            <div class="flex items-center justify-center gap-sm mb-md">
+                <span class="material-symbols-outlined text-primary-container text-display-lg" style="font-size: 32px; font-variation-settings: 'FILL' 1;">biotech</span>
+                <h1 class="font-display-lg text-display-lg text-on-surface">ResearchHub</h1>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface-variant">A collaborative workspace for modern research teams.</p>
+        </div>
+        <!-- Form -->
+        <form id="loginForm" class="space-y-lg">
+            <!-- Email -->
+            <div class="space-y-sm">
+                <label class="block font-title-sm text-title-sm text-on-surface" for="email">Email or Username</label>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">person</span>
+                    <input class="w-full h-[28px] pl-xl pr-sm bg-surface-container-lowest border border-outline-variant rounded font-body-dense text-body-dense text-on-surface placeholder-on-surface-variant/50 transition-colors" id="email" placeholder="user@institution.edu" type="text"/>
+                </div>
+            </div>
+            <!-- Password -->
+            <div class="space-y-sm">
+                <div class="flex justify-between items-center">
+                    <label class="block font-title-sm text-title-sm text-on-surface" for="password">Password</label>
+                </div>
+                <div class="relative">
+                    <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">lock</span>
+                    <input class="w-full h-[28px] pl-xl pr-sm bg-surface-container-lowest border border-outline-variant rounded font-body-dense text-body-dense text-on-surface placeholder-on-surface-variant/50 transition-colors" id="password" placeholder="••••••••" type="password"/>
+                    <button class="absolute right-sm top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface transition-colors" type="button">
+                        <span class="material-symbols-outlined text-[18px]">visibility</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Remember Me -->
+            <div class="flex items-center gap-sm">
+                <input class="w-4 h-4 bg-surface-container-lowest border-outline-variant rounded text-primary-container focus:ring-primary-container focus:ring-offset-background" id="remember" type="checkbox"/>
+                <label class="font-body-dense text-body-dense text-on-surface-variant cursor-pointer" for="remember">Remember me for 30 days</label>
+            </div>
+            <!-- Primary Actions -->
+            <div class="pt-sm">
+                <button class="w-full h-[32px] bg-primary-container hover:bg-inverse-primary text-on-primary-container font-title-sm text-title-sm rounded transition-colors flex items-center justify-center gap-xs" type="submit">
+                    Sign In
+                    <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+            </div>
+
+        </form>
+        <!-- Footer -->
+        <div class="mt-xl text-center">
+            <p class="font-body-dense text-body-dense text-on-surface-variant">
+                Don't have an account? 
+                <a class="text-primary hover:text-primary-fixed transition-colors font-title-sm cursor-pointer" href="signup.html">Create Account</a>
+            </p>
+        </div>
+    </div>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+</body>
+</html>

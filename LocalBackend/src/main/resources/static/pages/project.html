@@ -1,0 +1,1260 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ResearchHub - Project Workspace</title>
+    <meta name="description" content="ResearchHub project workspace — manage members, files, and tasks for your research project."/>
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="../js/tailwind-config.js"></script>
+    <!-- Global CSS -->
+    <link href="../css/global.css" rel="stylesheet"/>
+    <!-- CodeMirror 5 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/theme/material-darker.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/stex/stex.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/mode/markdown/markdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/matchbrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/edit/closebrackets.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/comment/comment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/selection/active-line.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/foldgutter.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.18/addon/fold/brace-fold.min.js"></script>
+    <style>
+        .tab-content { display: none; }
+        .tab-content.active { display: flex; flex-direction: column; flex: 1; min-height: 0; height: 100%; }
+        .table-row:hover { background-color: rgba(255,255,255,0.03); }
+        /* CodeMirror overrides for dark theme */
+        .CodeMirror { height: 100% !important; font-family: 'JetBrains Mono', monospace !important; font-size: 13px; background: var(--surface-container-lowest, #0e1117) !important; }
+        .CodeMirror-gutters { background: var(--surface-container, #1a1d24) !important; border-right: 1px solid var(--outline-variant, #2d3139) !important; }
+        .CodeMirror-linenumber { color: var(--outline, #555) !important; }
+        .cm-s-material-darker .CodeMirror-activeline-background { background: rgba(255,255,255,0.03) !important; }
+        /* Split gutter (Stitch design) */
+        .split-gutter { transition: background-color 0.2s ease; }
+        .split-gutter:hover { background-color: #4F46E5 !important; }
+        /* Custom scrollbars (Stitch design) */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #121316; }
+        ::-webkit-scrollbar-thumb { background: #343538; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #464555; }
+        /* File tree items */
+        .file-tree-item { display: flex; align-items: center; gap: 4px; padding: 2px 4px; cursor: pointer; border-radius: 2px; color: var(--on-surface-variant, #c7c4d8); transition: background-color 0.1s; }
+        .file-tree-item:hover { background: var(--surface-container, #1f1f23); }
+        .file-tree-item.active { color: var(--primary, #c3c0ff); background: var(--surface-container, #1f1f23); }
+        .file-tree-item .close-btn { opacity: 0; transition: opacity 0.15s; }
+        .file-tree-item:hover .close-btn { opacity: 1; }
+        /* Editor tab styling (Stitch design) */
+        .editor-tab { display: flex; align-items: center; gap: 4px; padding: 4px 12px; cursor: pointer; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 16px; color: var(--on-surface-variant, #c7c4d8); transition: all 0.1s; white-space: nowrap; border-bottom: 2px solid transparent; }
+        .editor-tab:hover { background: var(--surface-container-lowest, #0d0e11); color: var(--on-surface, #e3e2e6); }
+        .editor-tab.active { color: var(--primary, #c3c0ff); background: var(--surface-container-lowest, #0d0e11); border-bottom-color: var(--primary, #c3c0ff); }
+        .editor-tab .tab-close { opacity: 0; transition: opacity 0.15s; }
+        .editor-tab:hover .tab-close, .editor-tab.active .tab-close { opacity: 1; }
+        .editor-tab .tab-dot { display: none; }
+        .editor-tab.dirty .tab-dot { display: inline-block; }
+        .editor-tab.dirty .tab-close { display: none; }
+    </style>
+</head>
+<body class="flex h-screen w-screen overflow-hidden text-body-base font-body-base bg-surface-container-lowest text-on-surface">
+
+    <!-- Activity Bar (Dock) -->
+    <div class="w-dock-width h-full bg-surface-container flex flex-col items-center py-lg border-r border-outline-variant flex-shrink-0 z-10">
+        <div class="mb-xl">
+            <a href="dashboard.html">
+                <span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform" style="font-variation-settings: 'FILL' 1;">science</span>
+            </a>
+        </div>
+        <div class="flex flex-col gap-lg flex-grow">
+            <a href="dashboard.html" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    My Projects
+                </div>
+            </a>
+            <a href="notifications.html" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+                <div id="notificationBadge" class="absolute top-0 right-0 w-3 h-3 bg-error rounded-full border-2 border-surface-container hidden"></div>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Notifications
+                </div>
+            </a>
+        </div>
+        <div class="flex flex-col gap-lg mt-auto">
+            <a href="profile.html" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Profile
+                </div>
+            </a>
+            <div id="logoutBtn" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative">
+                <span class="material-symbols-outlined" data-icon="logout">logout</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Logout
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Left Sidebar (Project Nav) -->
+    <nav id="projectSidebar" class="h-screen w-panel-sidebar bg-surface-container-low border-r border-outline-variant flex flex-col py-lg flex-shrink-0 z-10 transition-all duration-300 overflow-hidden">
+        <!-- Back to Projects -->
+        <div class="px-md mb-md">
+            <a href="dashboard.html" class="flex items-center gap-sm text-on-surface-variant hover:text-primary transition-colors font-body-dense text-body-dense group">
+                <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+                <span class="sidebar-text">All Projects</span>
+            </a>
+        </div>
+        <div class="px-md mb-lg border-t border-outline-variant pt-md">
+            <div class="flex items-center gap-sm mb-xs">
+                <div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container text-[18px]">science</span>
+                </div>
+                <div class="overflow-hidden sidebar-text">
+                    <h1 id="sidebarProjectName" class="font-title-sm text-title-sm text-on-surface truncate">Loading...</h1>
+                    <span id="sidebarProjectStatus" class="font-label-caps text-label-caps text-primary">ACTIVE</span>
+                </div>
+            </div>
+        </div>
+        <!-- Nav Tabs -->
+        <div class="flex-1 overflow-y-auto px-xs flex flex-col gap-[2px]">
+            <a id="tab-btn-overview" href="#" onclick="switchTab('overview'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm bg-primary-container/10 border-l-2 border-primary text-primary font-title-sm text-title-sm rounded-r hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                <span class="sidebar-text">Overview</span>
+            </a>
+            <a id="tab-btn-members" href="#" onclick="switchTab('members'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]">group</span>
+                <span class="sidebar-text">Members</span>
+            </a>
+            <a id="tab-btn-files" href="#" onclick="switchTab('files'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]">folder_open</span>
+                <span class="sidebar-text">Files</span>
+            </a>
+            <a id="tab-btn-datasets" href="#" onclick="switchTab('datasets'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]">database</span>
+                <span class="sidebar-text">Datasets</span>
+            </a>
+            <a id="tab-btn-tasks" href="#" onclick="switchTab('tasks'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]">assignment</span>
+                <span class="sidebar-text">Tasks</span>
+            </a>
+            <a id="tab-btn-discussion" href="#" onclick="switchTab('discussion'); return false;" class="nav-tab-btn flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]">
+                <span class="material-symbols-outlined text-[18px]">forum</span>
+                <span class="sidebar-text">Discussion</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col h-screen min-w-0 bg-surface-container-lowest relative overflow-hidden">
+        <!-- Top App Bar -->
+        <header class="flex justify-between items-center w-full px-lg h-[48px] bg-surface border-b border-outline-variant flex-shrink-0">
+            <div class="flex items-center gap-md">
+                <button id="headerSidebarToggle" onclick="toggleSidebar()" class="text-on-surface-variant hover:text-on-surface p-xs rounded hover:bg-surface-container-high transition-colors" title="Toggle Sidebar">
+                    <span class="material-symbols-outlined text-[20px]">menu_open</span>
+                </button>
+                <span id="topbarBreadcrumb" class="font-body-dense text-body-dense text-on-surface-variant">Loading project...</span>
+                <span class="text-outline-variant">·</span>
+                <span id="topbarTabName" class="font-title-sm text-title-sm text-on-surface">Overview</span>
+            </div>
+            <div class="flex items-center gap-md">
+                <div id="offlineBadge" class="hidden items-center gap-xs px-sm h-[28px] bg-surface-container-high text-on-surface-variant border border-outline-variant rounded font-code-sm text-code-sm">
+                    <span class="material-symbols-outlined text-[16px]">cloud_off</span>
+                    Offline
+                </div>
+                <span id="ownerBadge" class="hidden items-center gap-xs px-sm h-[24px] bg-primary-container/20 text-primary border border-primary/30 rounded font-label-caps text-label-caps">
+                    <span class="material-symbols-outlined text-[12px]">verified</span>
+                    OWNER
+                </span>
+            </div>
+        </header>
+
+        <!-- Scrollable Content Area -->
+        <div class="flex-1 overflow-auto flex flex-col">
+
+            <!-- ══════════════════ OVERVIEW TAB ══════════════════ -->
+            <div id="tab-overview" class="tab-content active p-xl gap-lg">
+                <!-- Project Identity Card -->
+                <div class="bg-surface border border-outline-variant rounded-lg relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-4 h-4 border-t border-l border-primary opacity-40"></div>
+                    <div class="absolute top-0 right-0 w-4 h-4 border-t border-r border-primary opacity-40"></div>
+                    <div class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center px-md justify-between">
+                        <div class="flex items-center gap-2">
+                            <h2 class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Project Identity</h2>
+                            <button id="editProjectBtn" class="hidden text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center p-xs rounded hover:bg-surface-container-high" title="Edit Project">
+                                <span class="material-symbols-outlined text-[16px]">edit</span>
+                            </button>
+                        </div>
+                        <span id="overviewStatus" class="flex items-center gap-xs font-label-caps text-label-caps text-primary">
+                            <span class="w-[6px] h-[6px] rounded-full bg-primary animate-pulse"></span>ACTIVE
+                        </span>
+                    </div>
+                    <div class="p-lg flex items-start gap-lg">
+                        <div class="w-16 h-16 rounded bg-primary-container flex items-center justify-center shrink-0">
+                            <span class="material-symbols-outlined text-on-primary-container text-3xl">science</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h1 id="overviewTitle" class="font-display-lg text-display-lg text-on-surface break-words">--</h1>
+                            <span id="overviewDomain" class="inline-block px-sm py-xs mt-xs rounded bg-surface-container-highest text-code-sm text-on-surface-variant"></span>
+                            <p id="overviewDesc" class="font-body-base text-body-base text-on-surface-variant mt-md leading-relaxed"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats row -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-lg">
+                    <div class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-xs">
+                        <span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px]">group</span> TEAM SIZE
+                        </span>
+                        <span id="statMemberCount" class="font-display-lg text-display-lg text-on-surface">--</span>
+                    </div>
+                    <div class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-xs">
+                        <span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px]">schedule</span> CREATED
+                        </span>
+                        <span id="statCreatedAt" class="font-code-sm text-code-sm text-on-surface mt-auto">--</span>
+                    </div>
+                    <div class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-xs">
+                        <span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px]">person</span> OWNER
+                        </span>
+                        <span id="statOwnerName" class="font-body-base text-body-base text-on-surface mt-auto">--</span>
+                    </div>
+                    <div class="bg-surface-container border border-outline-variant rounded-lg p-md flex flex-col gap-xs">
+                        <span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px]">radio_button_checked</span> STATUS
+                        </span>
+                        <span id="statStatus" class="font-code-sm text-code-sm text-primary mt-auto">ACTIVE</span>
+                    </div>
+                </div>
+
+                <!-- Team Members preview -->
+                <div class="bg-surface border border-outline-variant rounded-lg">
+                    <div class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md">
+                        <h2 class="font-title-sm text-title-sm text-on-surface flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[16px]">group</span> Team Members
+                        </h2>
+                        <button onclick="switchTab('members')" class="font-body-dense text-body-dense text-primary hover:underline">Manage →</button>
+                    </div>
+                    <div id="overviewMembersList" class="p-md flex flex-wrap gap-md">
+                        <div class="text-on-surface-variant font-body-dense text-body-dense">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════ MEMBERS TAB ══════════════════ -->
+            <div id="tab-members" class="tab-content p-xl gap-lg">
+                <!-- Header -->
+                <div class="flex justify-between items-end pb-md border-b border-outline-variant">
+                    <div>
+                        <h1 class="font-display-lg text-display-lg text-on-surface">Members Management</h1>
+                        <p class="font-body-base text-body-base text-on-surface-variant mt-xs">Manage team access and roles for this project.</p>
+                    </div>
+                    <!-- Add Member button - owner only -->
+                    <button id="addMemberBtn" class="hidden h-[32px] px-md bg-primary-container text-on-primary-container font-title-sm text-title-sm rounded hover:bg-inverse-primary transition-colors flex items-center gap-xs active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">person_add</span>
+                        Add Member
+                    </button>
+                </div>
+
+                <!-- Add Member Panel (hidden by default, owner only) -->
+                <div id="addMemberPanel" class="hidden bg-surface border border-primary/30 rounded-lg">
+                    <div class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md rounded-t-lg">
+                        <span class="font-title-sm text-title-sm text-on-surface flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px] text-primary">person_add</span> Invite New Member
+                        </span>
+                        <button id="closeAddMemberPanel" class="text-on-surface-variant hover:text-on-surface transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                    </div>
+                    <div class="p-lg flex flex-col gap-md">
+                        <div class="flex gap-md items-end">
+                            <div class="flex-1 relative">
+                                <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">SEARCH USER</label>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                                    <input id="inviteSearchInput" type="text" autocomplete="off"
+                                        placeholder="Search by name or email..."
+                                        class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded pl-[36px] pr-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                                </div>
+                                <ul id="inviteSearchResults" class="absolute z-50 w-full bg-surface border border-outline-variant rounded-md shadow-lg hidden max-h-40 overflow-y-auto mt-1"></ul>
+                            </div>
+                            <div class="w-48">
+                                <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">ROLE</label>
+                                <select id="inviteRoleSelect" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="teammate" selected>Teammate</option>
+                                </select>
+                            </div>
+                            <button id="sendInviteBtn" disabled
+                                class="h-[36px] px-md bg-primary-container text-on-primary-container font-title-sm text-title-sm rounded hover:bg-inverse-primary transition-colors flex items-center gap-xs disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="material-symbols-outlined text-[16px]">send</span>
+                                Send Invite
+                            </button>
+                        </div>
+                        <div id="inviteSelectedUser" class="hidden bg-surface-container rounded p-sm flex items-center gap-md border border-outline-variant">
+                            <span class="material-symbols-outlined text-primary">person_check</span>
+                            <span id="inviteSelectedName" class="font-body-base text-body-base text-on-surface"></span>
+                            <span id="inviteSelectedEmail" class="font-body-dense text-body-dense text-on-surface-variant"></span>
+                            <button id="clearInviteSelection" class="ml-auto text-on-surface-variant hover:text-error transition-colors">
+                                <span class="material-symbols-outlined text-[16px]">cancel</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-xl">
+                    <!-- Left: Tables -->
+                    <div class="flex-1 flex flex-col gap-lg min-w-0">
+
+                        <!-- Pending Invitations -->
+                        <div id="pendingInvitesSection" class="hidden border border-outline-variant bg-surface rounded-lg">
+                            <div class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md rounded-t-lg">
+                                <span class="font-title-sm text-title-sm text-on-surface flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-[14px] text-outline">schedule</span> Pending Invitations
+                                </span>
+                                <span id="pendingCount" class="font-code-sm text-code-sm text-on-surface-variant"></span>
+                            </div>
+                            <div id="pendingInvitesList" class="flex flex-col"></div>
+                        </div>
+
+                        <!-- Active Members Table -->
+                        <div class="border border-outline-variant bg-surface rounded-lg flex flex-col overflow-hidden">
+                            <div class="h-[32px] bg-surface-container border-b border-outline-variant flex justify-between items-center px-md rounded-t-lg">
+                                <span class="font-title-sm text-title-sm text-on-surface flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-[14px] text-primary">group</span>
+                                    Active Members (<span id="memberCount">0</span>)
+                                </span>
+                                <div class="relative">
+                                    <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-[14px] text-on-surface-variant">search</span>
+                                    <input id="memberFilterInput" type="text" placeholder="Filter members..." 
+                                        class="h-[24px] bg-surface-container-lowest border border-outline-variant rounded pl-[24px] pr-sm font-body-dense text-body-dense text-on-surface focus:outline-none focus:border-primary w-[180px]"/>
+                                </div>
+                            </div>
+                            <div class="overflow-auto">
+                                <table class="w-full text-left border-collapse">
+                                    <thead class="sticky top-0 bg-surface-container z-10 shadow-[0_1px_0_theme(colors.outline-variant)]">
+                                        <tr class="h-[28px]">
+                                            <th class="px-md font-label-caps text-label-caps text-on-surface-variant font-normal w-[40%]">MEMBER</th>
+                                            <th class="px-md font-label-caps text-label-caps text-on-surface-variant font-normal w-[25%]">ROLE</th>
+                                            <th class="px-md font-label-caps text-label-caps text-on-surface-variant font-normal w-[20%]">JOINED</th>
+                                            <th class="px-md font-label-caps text-label-caps text-on-surface-variant font-normal w-[15%] text-center">ACTIONS</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="membersTableBody">
+                                        <tr>
+                                            <td colspan="4" class="px-md py-lg text-center text-on-surface-variant font-body-dense text-body-dense">Loading members...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Stats -->
+                    <div class="w-[260px] flex flex-col gap-md shrink-0">
+                        <div class="border border-outline-variant bg-surface rounded-lg p-md flex flex-col gap-md">
+                            <div class="flex items-center gap-sm border-b border-outline-variant pb-sm">
+                                <span class="material-symbols-outlined text-[16px] text-primary">pie_chart</span>
+                                <span class="font-title-sm text-title-sm text-on-surface">Role Distribution</span>
+                            </div>
+                            <div id="roleDistribution" class="flex flex-col gap-sm">
+                                <div class="text-on-surface-variant font-body-dense text-body-dense">Loading...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════ FILES TAB — LaTeX IDE ══════════════════ -->
+            <div id="tab-files" class="tab-content absolute top-[48px] inset-x-0 bottom-0 bg-surface-container-lowest z-10">
+                <!-- IDE Toolbar (matches Stitch: Compile, Save, History, Zoom) -->
+                <div class="bg-surface h-[40px] border-b border-outline-variant flex items-center px-sm gap-sm flex-shrink-0">
+                    <button id="compileBtn" onclick="compileLatex()" class="bg-primary-container text-on-primary-container h-[28px] px-md rounded flex items-center gap-xs font-title-sm text-title-sm hover:opacity-90 active:scale-95 transition-all">
+                        <span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                        Compile
+                    </button>
+                    <button onclick="saveCurrentFile()" class="h-[28px] px-sm rounded flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface border border-transparent hover:border-outline-variant font-body-dense text-body-dense transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">save</span>
+                        Save
+                    </button>
+                    <button onclick="showVersionHistory()" class="h-[28px] px-sm rounded flex items-center gap-xs text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface border border-transparent hover:border-outline-variant font-body-dense text-body-dense transition-colors">
+                        <span class="material-symbols-outlined text-[16px]">history</span>
+                        History
+                    </button>
+                    <div class="w-px h-[20px] bg-outline-variant mx-xs"></div>
+                    <select id="compilerSelect" class="h-[26px] px-sm bg-surface-container-lowest border border-outline-variant rounded text-on-surface font-code-sm text-[11px] focus:outline-none focus:border-primary cursor-pointer">
+                        <option value="pdflatex">pdflatex</option>
+                    </select>
+                    <div class="flex-1"></div>
+                    <!-- Compile status badge -->
+                    <div id="compileStatusBadge" class="flex items-center gap-xs bg-surface-container-lowest border border-outline-variant rounded-full px-sm py-[2px] font-label-caps text-label-caps">
+                        <span class="w-[6px] h-[6px] rounded-full bg-outline"></span>
+                        <span class="text-on-surface-variant">Ready</span>
+                    </div>
+                </div>
+
+                <!-- Multi-pane IDE Container -->
+                <div class="flex-1 flex overflow-hidden min-h-0">
+                    <!-- Panel 1: File Tree (Explorer) -->
+                    <div class="w-[220px] flex-shrink-0 bg-surface-dim border-r border-outline-variant flex flex-col">
+                        <div class="h-[32px] bg-surface flex items-center justify-between px-sm flex-shrink-0">
+                            <span class="text-title-sm font-title-sm text-on-surface uppercase tracking-wider text-[10px]">Project Explorer</span>
+                            <div class="flex items-center gap-xs">
+                                <button onclick="createNewFile(false)" class="flex items-center justify-center w-[22px] h-[22px] rounded hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="New File">
+                                    <span class="material-symbols-outlined text-[14px]">note_add</span>
+                                </button>
+                                <button onclick="createNewFile(true)" class="flex items-center justify-center w-[22px] h-[22px] rounded hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="New Folder">
+                                    <span class="material-symbols-outlined text-[14px]">create_new_folder</span>
+                                </button>
+                                <button onclick="loadFileTree()" class="flex items-center justify-center w-[22px] h-[22px] rounded hover:bg-surface-container-high transition-colors text-on-surface-variant hover:text-on-surface" title="Refresh">
+                                    <span class="material-symbols-outlined text-[14px]">refresh</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="fileTreeContainer" class="flex-1 overflow-y-auto p-sm font-code-sm text-code-sm">
+                            <!-- File tree rendered by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Gutter (draggable divider) -->
+                    <div class="w-[4px] split-gutter bg-surface-container-highest hover:bg-primary cursor-col-resize transition-colors flex-shrink-0"></div>
+
+                    <!-- Panel 2: Code Editor -->
+                    <div class="flex-1 flex flex-col min-w-0 bg-surface-container-lowest relative">
+                        <!-- File Tabs -->
+                        <div id="fileTabsContainer" class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center px-sm gap-sm overflow-x-auto flex-shrink-0" style="scrollbar-width: thin;">
+                            <!-- Tabs rendered by JS -->
+                        </div>
+
+                        <!-- Editor area -->
+                        <div class="flex-1 overflow-hidden relative">
+                            <div id="editorPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-md text-center z-10 bg-surface-container-lowest">
+                                <span class="material-symbols-outlined text-[56px] text-outline/30">functions</span>
+                                <h3 class="font-headline-md text-headline-md text-on-surface-variant">LaTeX Editor</h3>
+                                <p class="font-body-base text-body-base text-on-surface-variant/60 max-w-[320px]">Open a file from the Project Explorer to begin editing, or create a new file to get started.</p>
+                                <div class="flex gap-lg mt-md">
+                                    <div class="flex items-center gap-xs">
+                                        <kbd class="px-xs py-[2px] bg-surface-container border border-outline-variant rounded text-[11px] font-code-sm text-on-surface-variant">Ctrl+S</kbd>
+                                        <span class="text-[11px] text-on-surface-variant">Save</span>
+                                    </div>
+                                    <div class="flex items-center gap-xs">
+                                        <kbd class="px-xs py-[2px] bg-surface-container border border-outline-variant rounded text-[11px] font-code-sm text-on-surface-variant">Ctrl+B</kbd>
+                                        <span class="text-[11px] text-on-surface-variant">Compile</span>
+                                    </div>
+                                    <div class="flex items-center gap-xs">
+                                        <kbd class="px-xs py-[2px] bg-surface-container border border-outline-variant rounded text-[11px] font-code-sm text-on-surface-variant">Ctrl+P</kbd>
+                                        <span class="text-[11px] text-on-surface-variant">Preview</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="editorContainer" class="absolute inset-0"></div>
+                        </div>
+
+                        <!-- Status bar for editor (matches Stitch) -->
+                        <div id="editorStatusBar" class="h-[24px] bg-surface border-t border-outline-variant flex items-center px-sm text-code-sm font-code-sm text-on-surface-variant justify-between flex-shrink-0">
+                            <span id="editorStatusLeft">UTF-8 | LaTeX</span>
+                            <span id="editorStatusRight" class="flex items-center gap-xs text-primary">
+                                <span class="w-[8px] h-[8px] rounded-full bg-primary inline-block"></span> Sync Active
+                            </span>
+                        </div>
+
+                        <!-- Compiler Log Panel (togglable) -->
+                        <div id="compilerLogPanel" class="h-[180px] shrink-0 border-t border-outline-variant bg-surface-container flex flex-col hidden">
+                            <div class="flex items-center justify-between px-sm py-xs border-b border-outline-variant flex-shrink-0">
+                                <span class="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+                                    <span class="material-symbols-outlined text-[14px]">terminal</span> COMPILER OUTPUT
+                                </span>
+                                <button onclick="toggleCompilerLog()" class="text-on-surface-variant hover:text-on-surface">
+                                    <span class="material-symbols-outlined text-[14px]">close</span>
+                                </button>
+                            </div>
+                            <pre id="compilerLogContent" class="flex-1 overflow-auto p-sm font-code-sm text-[11px] text-on-surface-variant whitespace-pre-wrap">Ready to compile.</pre>
+                        </div>
+                    </div>
+
+                    <!-- Gutter (draggable divider) -->
+                    <div class="w-[4px] split-gutter bg-surface-container-highest hover:bg-primary cursor-col-resize transition-colors flex-shrink-0"></div>
+
+                    <!-- Panel 3: PDF Preview (matches Stitch) -->
+                    <div id="pdfPreviewPanel" class="w-[450px] flex-shrink-0 bg-surface-dim flex flex-col border-l border-outline-variant">
+                        <div class="h-[32px] bg-surface border-b border-outline-variant flex items-center justify-between px-sm flex-shrink-0">
+                            <span class="text-title-sm font-title-sm text-on-surface flex items-center gap-xs">
+                                <span class="material-symbols-outlined text-[16px]">picture_as_pdf</span>
+                                Preview
+                            </span>
+                            <div class="flex items-center gap-sm">
+                                <button onclick="compileLatex()" class="flex items-center gap-xs px-2 py-1 bg-primary text-on-primary rounded hover:bg-primary/90 transition-colors text-xs font-medium" title="Recompile Document">
+                                    <span class="material-symbols-outlined text-[14px]">play_arrow</span> Recompile
+                                </button>
+                            </div>
+                        </div>
+                        <div class="flex-1 overflow-y-auto p-md bg-[#262830] flex justify-center">
+                            <!-- PDF will load here -->
+                            <div id="pdfPlaceholder" class="flex flex-col items-center justify-center gap-md text-center">
+                                <span class="material-symbols-outlined text-[48px] text-outline/30">picture_as_pdf</span>
+                                <p class="font-body-base text-body-base text-on-surface-variant/60">Compile your document to see the PDF preview</p>
+                            </div>
+                            <iframe id="pdfPreviewFrame" class="bg-white w-full min-h-[500px] shadow-lg hidden" src="about:blank"></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════ TASKS TAB ══════════════════ -->
+            <div id="tab-tasks" class="tab-content flex-col">
+                
+                <!-- Header Bar -->
+                <div class="bg-surface border-b border-outline-variant px-lg py-sm flex items-center justify-between flex-shrink-0">
+                    <div class="flex items-center gap-sm">
+                        <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">assignment</span>
+                        <h2 class="font-title-sm text-title-sm text-on-surface">Project Tasks</h2>
+                        <span id="taskCount" class="font-code-sm text-code-sm text-on-surface-variant ml-sm">0 tasks</span>
+                    </div>
+                    <button id="createTaskBtn" onclick="openCreateTaskModal()" class="h-[32px] px-md bg-primary text-on-primary font-title-sm text-title-sm rounded hover:opacity-90 transition-opacity flex items-center gap-xs active:scale-95">
+                        <span class="material-symbols-outlined text-[16px]">add</span>
+                        New Task
+                    </button>
+                </div>
+
+                <!-- Kanban Board Area -->
+                <div class="flex-1 overflow-x-auto overflow-y-hidden p-lg flex gap-lg bg-surface-container-lowest">
+                    
+                    <!-- Column: TODO -->
+                    <div class="kanban-col flex flex-col w-[320px] shrink-0 bg-surface border border-outline-variant rounded-lg overflow-hidden h-full">
+                        <div class="h-[40px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md shrink-0">
+                            <div class="flex items-center gap-xs">
+                                <span class="w-2 h-2 rounded-full bg-outline"></span>
+                                <h3 class="font-label-caps text-label-caps text-on-surface">TO DO</h3>
+                            </div>
+                            <span id="count-todo" class="bg-surface-container-high px-sm py-[2px] rounded text-code-sm font-code-sm text-on-surface-variant">0</span>
+                        </div>
+                        <div id="col-todo" class="flex-1 overflow-y-auto p-sm flex flex-col gap-sm dropzone" data-status="todo">
+                            <!-- Tasks go here -->
+                        </div>
+                    </div>
+
+                    <!-- Column: IN PROGRESS -->
+                    <div class="kanban-col flex flex-col w-[320px] shrink-0 bg-surface border border-outline-variant rounded-lg overflow-hidden h-full">
+                        <div class="h-[40px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md shrink-0">
+                            <div class="flex items-center gap-xs">
+                                <span class="w-2 h-2 rounded-full bg-tertiary"></span>
+                                <h3 class="font-label-caps text-label-caps text-on-surface">IN PROGRESS</h3>
+                            </div>
+                            <span id="count-in_progress" class="bg-surface-container-high px-sm py-[2px] rounded text-code-sm font-code-sm text-on-surface-variant">0</span>
+                        </div>
+                        <div id="col-in_progress" class="flex-1 overflow-y-auto p-sm flex flex-col gap-sm dropzone" data-status="in_progress">
+                        </div>
+                    </div>
+
+                    <!-- Column: REVIEW -->
+                    <div class="kanban-col flex flex-col w-[320px] shrink-0 bg-surface border border-outline-variant rounded-lg overflow-hidden h-full">
+                        <div class="h-[40px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md shrink-0">
+                            <div class="flex items-center gap-xs">
+                                <span class="w-2 h-2 rounded-full bg-secondary"></span>
+                                <h3 class="font-label-caps text-label-caps text-on-surface">REVIEW</h3>
+                            </div>
+                            <span id="count-review" class="bg-surface-container-high px-sm py-[2px] rounded text-code-sm font-code-sm text-on-surface-variant">0</span>
+                        </div>
+                        <div id="col-review" class="flex-1 overflow-y-auto p-sm flex flex-col gap-sm dropzone" data-status="review">
+                        </div>
+                    </div>
+
+                    <!-- Column: DONE -->
+                    <div class="kanban-col flex flex-col w-[320px] shrink-0 bg-surface border border-outline-variant rounded-lg overflow-hidden h-full">
+                        <div class="h-[40px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-md shrink-0">
+                            <div class="flex items-center gap-xs">
+                                <span class="w-2 h-2 rounded-full bg-primary"></span>
+                                <h3 class="font-label-caps text-label-caps text-on-surface">DONE</h3>
+                            </div>
+                            <span id="count-done" class="bg-surface-container-high px-sm py-[2px] rounded text-code-sm font-code-sm text-on-surface-variant">0</span>
+                        </div>
+                        <div id="col-done" class="flex-1 overflow-y-auto p-sm flex flex-col gap-sm dropzone" data-status="done">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- ══════════════════ DATASETS TAB ══════════════════ -->
+            <div id="tab-datasets" class="tab-content flex-row p-0 gap-0">
+                <!-- Main datasets area -->
+                <div class="flex-1 flex flex-col min-w-0">
+                    <!-- Controls Bar -->
+                    <div class="flex justify-between items-center bg-surface border-b border-outline-variant px-lg py-sm flex-shrink-0">
+                        <div class="flex items-center gap-md">
+                            <div class="relative flex items-center">
+                                <span class="material-symbols-outlined absolute left-sm text-on-surface-variant text-[16px]">search</span>
+                                <input id="datasetSearchInput" oninput="filterDatasets(this.value)" class="bg-surface-container-lowest border border-outline-variant text-on-surface font-body-dense text-body-dense h-[28px] pl-[32px] pr-sm rounded focus:border-primary focus:ring-1 focus:ring-primary/50 focus:outline-none w-[240px]" placeholder="Search datasets..." type="text"/>
+                            </div>
+                            <span id="datasetsCount" class="font-code-sm text-code-sm text-on-surface-variant">0 datasets</span>
+                        </div>
+                        <button onclick="openAddDatasetModal()" class="bg-primary-container text-on-primary-container px-md h-[28px] rounded flex items-center justify-center gap-xs font-title-sm text-[12px] hover:opacity-90 transition-opacity active:scale-95">
+                            <span class="material-symbols-outlined text-[16px]">add</span>
+                            Add Dataset
+                        </button>
+                    </div>
+
+                    <!-- Table Header -->
+                    <div class="bg-surface-dim h-[36px] flex items-center px-lg border-b border-outline-variant flex-shrink-0">
+                        <div class="w-[30%] font-title-sm text-[12px] text-on-surface">Dataset Name</div>
+                        <div class="w-[12%] font-title-sm text-[12px] text-on-surface">Version</div>
+                        <div class="w-[13%] font-title-sm text-[12px] text-on-surface">Size</div>
+                        <div class="w-[20%] font-title-sm text-[12px] text-on-surface">Status</div>
+                        <div class="w-[25%] font-title-sm text-[12px] text-on-surface text-right">Actions</div>
+                    </div>
+
+                    <!-- Table Body -->
+                    <div id="datasetsTableBody" class="flex-1 overflow-y-auto">
+                        <!-- Populated by JS -->
+                    </div>
+
+                    <!-- Empty State -->
+                    <div id="datasetsEmpty" class="hidden flex-1 flex flex-col items-center justify-center gap-md py-xl">
+                        <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
+                            <span class="material-symbols-outlined text-outline text-3xl">database</span>
+                        </div>
+                        <p class="font-body-base text-body-base text-on-surface-variant text-center max-w-sm">
+                            No datasets registered yet. Add a dataset by providing the local path on your machine.
+                        </p>
+                        <button onclick="openAddDatasetModal()" class="mt-sm h-[32px] px-lg bg-primary-container text-on-primary-container font-title-sm text-[12px] rounded hover:opacity-90 transition-opacity flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[16px]">add</span>
+                            Add Your First Dataset
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right Detail Panel -->
+                <div id="datasetDetailPanel" class="hidden w-[300px] bg-surface-dim border-l border-outline-variant flex flex-col h-full flex-shrink-0">
+                    <div class="h-[36px] border-b border-outline-variant flex items-center px-sm justify-between bg-surface-dim flex-shrink-0">
+                        <span class="font-title-sm text-[12px] text-on-surface">Dataset Details</span>
+                        <button onclick="closeDatasetDetail()" class="text-on-surface-variant hover:text-primary transition-colors">
+                            <span class="material-symbols-outlined text-[16px]">close</span>
+                        </button>
+                    </div>
+                    <div id="datasetDetailContent" class="p-md flex flex-col gap-sm overflow-y-auto flex-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ══════════════════ DISCUSSION TAB ══════════════════ -->
+            <div id="tab-discussion" class="tab-content p-0 gap-0">
+                <!-- Chat Container — fills available space -->
+                <div class="flex-1 flex flex-col min-h-0 relative">
+
+                    <!-- Header Bar -->
+                    <div class="bg-surface border-b border-outline-variant px-lg py-sm flex items-center justify-between flex-shrink-0">
+                        <div class="flex items-center gap-sm">
+                            <span class="material-symbols-outlined text-primary text-[18px]" style="font-variation-settings: 'FILL' 1;">forum</span>
+                            <h2 class="font-title-sm text-title-sm text-on-surface">Project Discussion</h2>
+                            <span id="discussionMsgCount" class="font-code-sm text-code-sm text-on-surface-variant ml-sm">0 messages</span>
+                        </div>
+                        <div class="flex items-center gap-xs">
+                            <span class="w-[6px] h-[6px] rounded-full bg-primary animate-pulse"></span>
+                            <span class="font-label-caps text-label-caps text-primary">LIVE</span>
+                        </div>
+                    </div>
+
+                    <!-- Messages Area -->
+                    <div id="discussionMessages" class="flex-1 overflow-y-auto px-lg py-md flex flex-col gap-sm scroll-smooth" style="min-height: 0;">
+                        <!-- Messages rendered here by JS -->
+                        <div id="discussionEmpty" class="flex-1 flex flex-col items-center justify-center gap-md py-xl">
+                            <div class="w-16 h-16 rounded-full bg-surface-container-high flex items-center justify-center">
+                                <span class="material-symbols-outlined text-outline text-3xl">chat_bubble_outline</span>
+                            </div>
+                            <p class="font-body-base text-body-base text-on-surface-variant text-center max-w-xs">
+                                No messages yet. Start the conversation with your team!
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Input Bar — pinned to bottom -->
+                    <div class="bg-surface border-t border-outline-variant px-lg py-md flex-shrink-0">
+                        <div class="flex items-end gap-md">
+                            <!-- Current user avatar -->
+                            <div id="discussionUserAvatar" class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-title-sm text-[11px] shrink-0 mb-[2px]">
+                                --
+                            </div>
+                            <!-- Input field -->
+                            <div class="flex-1 relative">
+                                <textarea id="discussionInput" rows="1"
+                                    placeholder="Type a message..."
+                                    class="w-full bg-surface-container-lowest border border-outline-variant rounded-lg px-md py-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-none max-h-[120px]"
+                                    style="min-height: 38px;"
+                                ></textarea>
+                            </div>
+                            <!-- Send button -->
+                            <button id="discussionSendBtn" onclick="sendDiscussionMessage()"
+                                class="h-[38px] w-[38px] bg-primary text-on-primary rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center shrink-0 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed mb-[2px]"
+                                disabled>
+                                <span class="material-symbols-outlined text-[18px]">send</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-xs mt-xs">
+                            <span class="font-body-dense text-body-dense text-on-surface-variant opacity-60">Press Enter to send · Shift+Enter for new line</span>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div><!-- end scrollable content -->
+    </main>
+
+    <!-- Confirm Remove Member Dialog -->
+    <div id="confirmRemoveModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg">
+            <div class="flex items-start gap-md">
+                <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-error text-[20px]">person_remove</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-md text-headline-md text-on-surface">Remove Member?</h2>
+                    <p id="confirmRemoveText" class="font-body-base text-body-base text-on-surface-variant mt-xs">
+                        This will remove the member from the project.
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-md">
+                <button id="cancelRemoveBtn" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-title-sm hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button id="confirmRemoveBtn" class="h-[36px] px-md rounded bg-error text-on-error font-title-sm text-title-sm hover:opacity-90 transition-opacity flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">person_remove</span>
+                    Remove
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Project Modal -->
+    <div id="editProjectModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg">
+            <div class="flex justify-between items-center">
+                <h2 class="font-headline-md text-headline-md text-on-surface">Edit Project</h2>
+                <button id="closeEditProjectBtn" class="text-on-surface-variant hover:text-on-surface transition-colors p-xs rounded-full hover:bg-surface-container">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <form id="editProjectForm" class="flex flex-col gap-md">
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-sm text-label-sm text-on-surface-variant">Project Title</label>
+                    <input type="text" id="editProjectTitle" required class="h-[36px] bg-surface-container-low border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary"/>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-sm text-label-sm text-on-surface-variant">Domain</label>
+                    <input type="text" id="editProjectDomain" class="h-[36px] bg-surface-container-low border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary"/>
+                </div>
+                <div class="flex flex-col gap-xs">
+                    <label class="font-label-sm text-label-sm text-on-surface-variant">Description</label>
+                    <textarea id="editProjectDesc" rows="3" class="bg-surface-container-low border border-outline-variant rounded p-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary resize-none"></textarea>
+                </div>
+                <div class="flex justify-end gap-sm mt-sm">
+                    <button type="button" id="cancelEditProjectBtn" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-title-sm hover:bg-surface-container-high transition-colors">Cancel</button>
+                    <button type="submit" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-title-sm hover:opacity-90 transition-opacity">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Task Dialog -->
+    <div id="createTaskModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col">
+            <div class="h-[48px] bg-surface-container border-b border-outline-variant flex items-center justify-between px-lg shrink-0">
+                <h3 class="font-title-sm text-title-sm text-on-surface flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-primary">add_task</span> New Task
+                </h3>
+                <button onclick="closeCreateTaskModal()" class="text-on-surface-variant hover:text-on-surface transition-colors">
+                    <span class="material-symbols-outlined text-[20px]">close</span>
+                </button>
+            </div>
+            <form id="createTaskForm" onsubmit="submitCreateTask(event)" class="p-lg flex flex-col gap-md">
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">TASK TITLE *</label>
+                    <input id="taskTitleInput" type="text" required
+                        placeholder="e.g., Update literature review"
+                        class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all"/>
+                </div>
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">DESCRIPTION</label>
+                    <textarea id="taskDescInput" rows="3"
+                        placeholder="Add more details..."
+                        class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all resize-y"
+                    ></textarea>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-md">
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">PRIORITY</label>
+                        <select id="taskPriorityInput" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                            <option value="low">Low</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="high">High</option>
+                            <option value="urgent">Urgent</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">DUE DATE</label>
+                        <input id="taskDateInput" type="date"
+                            class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all"/>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">ASSIGNEE</label>
+                    <select id="taskAssigneeInput" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                        <option value="">Unassigned</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-sm mt-md">
+                    <button type="button" onclick="closeCreateTaskModal()" class="h-[36px] px-md text-on-surface-variant font-title-sm text-title-sm hover:bg-surface-container transition-colors rounded">Cancel</button>
+                    <button type="submit" class="h-[36px] px-md bg-primary text-on-primary font-title-sm text-title-sm rounded hover:opacity-90 transition-opacity active:scale-95">Create Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Detail Panel (Slide-over) -->
+    <div id="taskDetailPanel" class="fixed inset-y-0 right-0 w-[600px] max-w-[100vw] bg-surface-container-low border-l border-outline-variant shadow-2xl transform translate-x-full transition-transform duration-300 z-40 flex flex-col">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-lg py-md border-b border-outline-variant flex-shrink-0">
+            <h2 class="font-title-lg text-title-lg text-on-surface">Task Details</h2>
+            <button onclick="closeTaskDetail()" class="text-on-surface-variant hover:text-on-surface transition-colors p-xs rounded-full hover:bg-surface-container">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-lg flex flex-col gap-xl">
+            <!-- Title -->
+            <div>
+                <input id="detailTaskTitle" type="text" class="w-full bg-transparent font-headline-sm text-headline-sm text-on-surface focus:outline-none border-b border-transparent focus:border-primary transition-colors pb-xs" placeholder="Task Title">
+            </div>
+
+            <!-- Properties Grid -->
+            <div class="grid grid-cols-2 gap-md bg-surface-container p-md rounded-lg border border-outline-variant">
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">STATUS</label>
+                    <select id="detailTaskStatus" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                        <option value="todo">To Do</option>
+                        <option value="in_progress">In Progress</option>
+                        <option value="review">Review</option>
+                        <option value="done">Done</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">PRIORITY</label>
+                    <select id="detailTaskPriority" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                        <option value="urgent">Urgent</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">ASSIGNEE</label>
+                    <select id="detailTaskAssignee" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                        <option value="">Unassigned</option>
+                        <!-- Populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">DUE DATE</label>
+                    <input id="detailTaskDate" type="date" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all">
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div>
+                <label class="font-title-sm text-title-sm text-on-surface mb-sm block">Description</label>
+                <textarea id="detailTaskDesc" rows="4" class="w-full bg-surface-container-lowest border border-outline-variant rounded p-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all resize-y" placeholder="Add a more detailed description..."></textarea>
+            </div>
+
+            <!-- Subtasks -->
+            <div>
+                <div class="flex items-center justify-between mb-sm">
+                    <label class="font-title-sm text-title-sm text-on-surface">Subtasks</label>
+                    <span id="subtaskProgressText" class="font-body-sm text-body-sm text-on-surface-variant">0/0</span>
+                </div>
+                
+                <div class="w-full h-1 bg-surface-container-high rounded-full mb-md overflow-hidden">
+                    <div id="subtaskProgressBar" class="h-full bg-primary transition-all duration-300" style="width: 0%"></div>
+                </div>
+
+                <div id="subtaskList" class="flex flex-col gap-xs mb-md">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="flex items-center gap-sm">
+                    <input id="newSubtaskInput" type="text" class="flex-1 h-[36px] bg-surface-container border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all" placeholder="Add a subtask..." onkeypress="if(event.key === 'Enter') addSubtask()">
+                    <button onclick="addSubtask()" class="h-[36px] px-md bg-surface-container-high text-on-surface font-title-sm text-title-sm rounded hover:bg-surface-container-highest transition-colors">Add</button>
+                </div>
+            </div>
+
+            <!-- Activity / Updates -->
+            <div>
+                <label class="font-title-sm text-title-sm text-on-surface mb-sm block">Activity & Updates</label>
+                
+                <div id="updatesList" class="flex flex-col gap-md mb-md">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="bg-surface-container border border-outline-variant rounded-lg p-sm">
+                    <textarea id="newUpdateMessage" rows="2" class="w-full bg-transparent font-body-base text-body-base text-on-surface focus:outline-none resize-none" placeholder="Post an update or comment..."></textarea>
+                    
+                    <div class="flex items-center justify-between mt-sm pt-sm border-t border-outline-variant">
+                        <div class="flex items-center gap-sm">
+                            <span class="font-body-sm text-body-sm text-on-surface-variant">Change status:</span>
+                            <select id="newUpdateStatus" class="h-[28px] bg-surface-container-lowest border border-outline-variant rounded px-xs font-body-sm text-body-sm text-on-surface focus:outline-none focus:border-primary transition-all">
+                                <option value="">No change</option>
+                                <option value="todo">To Do</option>
+                                <option value="in_progress">In Progress</option>
+                                <option value="review">Review</option>
+                                <option value="done">Done</option>
+                            </select>
+                        </div>
+                        <button onclick="postUpdate()" class="h-[32px] px-md bg-primary text-on-primary font-title-sm text-title-sm rounded hover:opacity-90 transition-opacity active:scale-95">Post Update</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="../js/api.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/websocket.js"></script>
+    <script src="../js/files.js"></script>
+    <script src="../js/latex.js"></script>
+    <script src="../js/project.js"></script>
+    <script src="../js/tasks.js"></script>
+    <script src="../js/datasets.js"></script>
+
+    <!-- ══════════════════ VERSION HISTORY MODAL ══════════════════ -->
+    <div id="versionHistoryModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg max-h-[80vh]">
+            <div class="flex justify-between items-center">
+                <h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-primary">history</span>
+                    Version History
+                </h2>
+                <button onclick="closeVersionHistory()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <p class="font-body-dense text-body-dense text-on-surface-variant">
+                File: <strong id="versionHistoryFileName"></strong>
+            </p>
+            <div id="versionHistoryList" class="flex-1 overflow-y-auto border border-outline-variant rounded-lg">
+                <!-- Versions rendered by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ CONFLICT RESOLUTION MODAL ══════════════════ -->
+    <div id="conflictModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg">
+            <div class="flex items-start gap-md">
+                <div class="w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-warning text-[20px]">sync_problem</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-md text-headline-md text-on-surface">Conflict Detected</h2>
+                    <p class="font-body-base text-body-base text-on-surface-variant mt-xs">
+                        <strong id="conflictFileName"></strong> has been modified by another user.
+                    </p>
+                    <p class="font-body-dense text-body-dense text-on-surface-variant mt-sm">
+                        Server version: <strong id="conflictServerVersion"></strong> |
+                        Your version: <strong id="conflictClientVersion"></strong>
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-sm">
+                <button onclick="document.getElementById('conflictModal').style.display='none'" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button onclick="resolveConflict('server')" class="h-[36px] px-md rounded bg-surface-container text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">cloud_download</span> Use Server Version
+                </button>
+                <button onclick="resolveConflict('client')" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-[12px] hover:opacity-90 transition-opacity flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">cloud_upload</span> Keep My Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ ADD DATASET MODAL ══════════════════ -->
+    <div id="addDatasetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-lg p-xl flex flex-col gap-lg">
+            <div class="flex justify-between items-center">
+                <h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-primary">database</span>
+                    Register Dataset
+                </h2>
+                <button onclick="closeAddDatasetModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-md">
+                <div class="flex flex-col gap-xs">
+                    <label class="font-title-sm text-[12px] text-on-surface-variant">Source</label>
+                    <div class="flex gap-sm">
+                        <input id="addDatasetPath" type="text" placeholder="Selected path..." readonly
+                            class="flex-1 h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-md font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all cursor-not-allowed"/>
+                        <input type="file" id="directoryPicker" webkitdirectory directory multiple class="hidden" onchange="handleDirectorySelection(event)" />
+                        <button id="browsePathBtn" type="button" onclick="document.getElementById('directoryPicker').click()" class="h-[36px] px-md bg-surface-container border border-outline-variant rounded font-title-sm text-[12px] text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px]">folder_open</span> Browse Folder
+                        </button>
+                        <input type="file" id="filePicker" multiple class="hidden" onchange="handleDirectorySelection(event)" />
+                        <button id="browseFileBtn" type="button" onclick="document.getElementById('filePicker').click()" class="h-[36px] px-md bg-surface-container border border-outline-variant rounded font-title-sm text-[12px] text-on-surface hover:bg-surface-container-high transition-colors flex items-center gap-xs">
+                            <span class="material-symbols-outlined text-[14px]">description</span> Browse Files
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Scan Results -->
+                <div id="scanResults" class="hidden bg-surface-container-lowest border border-outline-variant rounded-lg p-sm">
+                    <div class="font-title-sm text-[11px] text-primary mb-xs flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-[14px]">check_circle</span> Path Verified
+                    </div>
+                    <div class="grid grid-cols-2 gap-xs font-body-dense text-body-dense">
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Size:</span><span id="scanSize" class="font-code-sm">-</span></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Files:</span><span id="scanFiles" class="font-code-sm">-</span></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Format:</span><span id="scanFormat" class="font-code-sm">-</span></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Checksum:</span><span id="scanChecksum" class="font-code-sm">-</span></div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Dataset Name *</label>
+                    <input id="addDatasetName" type="text" placeholder="e.g. CASME II"
+                        class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-md font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all"/>
+                </div>
+                <div class="flex gap-md">
+                    <div class="flex-1">
+                        <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Version</label>
+                        <input id="addDatasetVersion" type="text" value="v1.0" placeholder="v1.0"
+                            class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-md font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all"/>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Description</label>
+                    <textarea id="addDatasetDescription" rows="3" placeholder="Describe this dataset..."
+                        class="w-full bg-surface-container-lowest border border-outline-variant rounded px-md py-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-md pt-sm border-t border-outline-variant">
+                <button onclick="closeAddDatasetModal()" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button id="addDatasetSubmitBtn" onclick="submitAddDataset()" disabled class="h-[36px] px-lg rounded bg-primary-container text-on-primary-container font-title-sm text-[12px] hover:opacity-90 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">database</span>
+                    Register Dataset
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ EDIT DATASET MODAL ══════════════════ -->
+    <div id="editDatasetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg">
+            <div class="flex justify-between items-center">
+                <h2 class="font-headline-md text-headline-md text-on-surface">Edit Dataset</h2>
+                <button onclick="closeEditDatasetModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="flex flex-col gap-md">
+                <div>
+                    <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Name</label>
+                    <input id="editDatasetName" type="text" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-md font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all"/>
+                </div>
+                <div class="flex gap-md">
+                    <div class="flex-1">
+                        <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Version</label>
+                        <input id="editDatasetVersion" type="text" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-md font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all"/>
+                    </div>
+                    <div class="flex-1">
+                        <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Format</label>
+                        <input id="editDatasetFormat" type="text" class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-md font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all"/>
+                    </div>
+                </div>
+                <div>
+                    <label class="font-title-sm text-[12px] text-on-surface-variant block mb-xs">Description</label>
+                    <textarea id="editDatasetDescription" rows="3" class="w-full bg-surface-container-lowest border border-outline-variant rounded px-md py-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary transition-all resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex justify-end gap-md pt-sm border-t border-outline-variant">
+                <button onclick="closeEditDatasetModal()" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button onclick="submitEditDataset()" class="h-[36px] px-lg rounded bg-primary-container text-on-primary-container font-title-sm text-[12px] hover:opacity-90 transition-opacity">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ DELETE DATASET MODAL ══════════════════ -->
+    <div id="deleteDatasetModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface-container-low border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col gap-lg">
+            <div class="flex items-start gap-md">
+                <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-error text-[20px]">delete</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-md text-headline-md text-on-surface">Remove Dataset?</h2>
+                    <p class="font-body-base text-body-base text-on-surface-variant mt-xs">
+                        This will remove <strong id="deleteDatasetName"></strong> from the project. The actual files on disk will not be deleted.
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-md">
+                <button onclick="closeDeleteDatasetModal()" class="h-[36px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button onclick="executeDeleteDataset()" class="h-[36px] px-md rounded bg-error text-on-error font-title-sm text-[12px] hover:opacity-90 transition-opacity flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[16px]">delete</span>Remove
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══════════════════ SYNC PROGRESS MODAL ══════════════════ -->
+    <div id="syncProgressModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 items-center justify-center" style="display:none">
+        <div class="bg-surface border border-outline-variant rounded-xl shadow-2xl w-full max-w-xl p-xl flex flex-col gap-lg">
+            <div class="flex justify-between items-center">
+                <h2 class="font-headline-md text-headline-md text-on-surface flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-primary">download</span>
+                    Downloading Dataset
+                </h2>
+                <button onclick="closeSyncProgressModal()" class="text-on-surface-variant hover:text-on-surface">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <!-- Dataset Name -->
+            <div>
+                <div id="syncDatasetName" class="font-headline-md text-headline-md font-bold text-on-surface"></div>
+                <div class="font-body-dense text-body-dense text-on-surface-variant">Downloading files to local workspace</div>
+            </div>
+
+            <!-- Source → Destination -->
+            <div class="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex items-center justify-between">
+                <div class="flex items-center gap-sm">
+                    <span class="material-symbols-outlined text-on-surface-variant text-[24px]">computer</span>
+                    <div>
+                        <div class="font-label-caps text-label-caps text-on-surface-variant">SOURCE</div>
+                        <div id="syncSourceName" class="font-title-sm text-[12px] text-on-surface">Source</div>
+                    </div>
+                </div>
+                <span class="material-symbols-outlined text-primary text-[20px]">arrow_forward</span>
+                <div class="flex items-center gap-sm">
+                    <div class="text-right">
+                        <div class="font-label-caps text-label-caps text-on-surface-variant">DESTINATION</div>
+                        <div id="syncDestName" class="font-title-sm text-[12px] text-on-surface">Local</div>
+                    </div>
+                    <span class="material-symbols-outlined text-on-surface-variant text-[24px]">save</span>
+                </div>
+            </div>
+
+            <!-- Progress -->
+            <div>
+                <div class="flex justify-between mb-xs">
+                    <span class="font-title-sm text-[12px] text-on-surface">Transfer Progress</span>
+                    <span id="syncProgressPct" class="font-code-sm text-code-sm text-on-surface">0%</span>
+                </div>
+                <div class="flex items-center gap-sm mb-xs">
+                    <span id="syncProgressTransferred" class="font-code-sm text-code-sm text-on-surface-variant">0 B</span>
+                    <span class="font-code-sm text-code-sm text-on-surface-variant">/</span>
+                    <span id="syncTotalSize" class="font-code-sm text-code-sm text-on-surface-variant">0 B</span>
+                </div>
+                <div class="w-full h-[6px] bg-surface-container-highest rounded-full overflow-hidden">
+                    <div id="syncProgressBar" class="h-full bg-primary rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Telemetry Log -->
+            <div>
+                <div class="font-label-caps text-label-caps text-on-surface-variant mb-xs">SYSTEM TELEMETRY</div>
+                <div id="syncTelemetryLog" class="bg-surface-container-lowest border border-outline-variant rounded-lg p-sm h-[120px] overflow-y-auto flex flex-col gap-[2px] font-code-sm text-code-sm text-on-surface-variant">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-between items-center pt-sm border-t border-outline-variant">
+                <div class="flex items-center gap-xs text-on-surface-variant">
+                    <span class="material-symbols-outlined text-[14px]">lock</span>
+                    <span class="font-body-dense text-body-dense">End-to-end encrypted</span>
+                </div>
+                <div class="flex gap-sm">
+                    <button onclick="closeSyncProgressModal()" class="h-[32px] px-md rounded border border-outline-variant text-on-surface font-title-sm text-[12px] hover:bg-surface-container-high transition-colors">Cancel</button>
+                    <button id="syncPauseBtn" onclick="closeSyncProgressModal()" class="h-[32px] px-md rounded bg-primary-container text-on-primary-container font-title-sm text-[12px] hover:opacity-90 transition-opacity flex items-center gap-xs">
+                        <span class="material-symbols-outlined text-[14px]">pause</span> Pause
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sync Path Modal -->
+    <div id="syncPathModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col scale-95 opacity-0 transition-all duration-200" id="syncPathModalContent">
+            <div class="flex items-center space-x-md mb-md">
+                <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container text-[24px]">folder_managed</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Setup Workspace</h2>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Required for offline access and syncing.</p>
+                </div>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface mb-md">Please specify a local folder path where ResearchHub will store and sync all your project files (datasets, latex files).</p>
+            <form id="syncPathForm" class="flex flex-col space-y-md mb-lg">
+                <div class="flex flex-col space-y-xs">
+                    <label class="font-title-sm text-title-sm text-on-surface" for="localSyncPathInput">Local Directory Path <span class="text-error">*</span></label>
+                        <input class="h-[36px] flex-1 bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary" id="localSyncPathInput" placeholder="e.g. C:\Users\88016\Desktop\ResearchHub" type="text" required />
+                    </div>
+                </div>
+            </form>
+            <div class="flex justify-end">
+                <button type="submit" form="syncPathForm" id="saveSyncPathBtn" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-title-sm hover:bg-primary/90 transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Path
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="../js/api.js?v=3"></script>
+    <script src="../js/websocket.js?v=3"></script>
+    <script src="../js/project.js?v=3"></script>
+    <script src="../js/latex.js?v=3"></script>
+    <script src="../js/files.js?v=3"></script>
+    <script src="../js/datasets.js?v=3"></script>
+    <script src="../js/tasks.js?v=3"></script>
+
+    <script>
+        // Sidebar Toggle Logic
+        let isSidebarCollapsed = false;
+        function toggleSidebar() {
+            const sidebar = document.getElementById('projectSidebar');
+            const toggleIcon = document.querySelector('#headerSidebarToggle .material-symbols-outlined');
+            const texts = document.querySelectorAll('.sidebar-text');
+            isSidebarCollapsed = !isSidebarCollapsed;
+            
+            if (isSidebarCollapsed) {
+                // Collapse
+                sidebar.classList.remove('w-panel-sidebar');
+                sidebar.classList.add('w-[60px]'); // Keep it slim instead of w-0 for better UX, or w-0 if preferred. Let's make it a narrow icon-only bar.
+                texts.forEach(el => el.classList.add('hidden'));
+                if (toggleIcon) toggleIcon.textContent = 'menu';
+            } else {
+                // Expand
+                sidebar.classList.add('w-panel-sidebar');
+                sidebar.classList.remove('w-[60px]');
+                texts.forEach(el => el.classList.remove('hidden'));
+                if (toggleIcon) toggleIcon.textContent = 'menu_open';
+            }
+        }
+    </script>
+</body>
+</html>

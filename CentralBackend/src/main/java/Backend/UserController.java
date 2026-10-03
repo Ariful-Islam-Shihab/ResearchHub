@@ -98,4 +98,28 @@ public class UserController {
 
         return response;
     }
+
+    @PutMapping("/{id}/sync-path")
+    public Map<String, Object> updateSyncPath(@PathVariable int id, @RequestBody Map<String, String> body) {
+        Map<String, Object> response = new HashMap<>();
+        String path = body.get("local_sync_path");
+
+        if (path == null || path.trim().isEmpty()) {
+            response.put("success", false);
+            response.put("message", "Sync path is required.");
+            return response;
+        }
+
+        try {
+            String sql = "UPDATE users SET local_sync_path = ? WHERE id = ?";
+            db.update(sql, path.trim(), id);
+            response.put("success", true);
+            response.put("message", "Sync path updated successfully.");
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("message", "Error updating sync path: " + e.getMessage());
+        }
+
+        return response;
+    }
 }

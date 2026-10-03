@@ -19,6 +19,63 @@ document.addEventListener('DOMContentLoaded', () => {
         userNameDisplay.textContent = currentUser.name || currentUser.email || 'Researcher';
     }
 
+    // Check for local_sync_path
+    if (!currentUser.local_sync_path || currentUser.local_sync_path === 'null') {
+        const syncPathModal = document.getElementById('syncPathModal');
+        const syncPathModalContent = document.getElementById('syncPathModalContent');
+        if (syncPathModal && syncPathModalContent) {
+            syncPathModal.classList.remove('hidden');
+            syncPathModal.classList.add('flex');
+            // Remove opacity-0 permanently for testing just in case
+            syncPathModalContent.classList.remove('opacity-0', 'scale-95');
+            syncPathModalContent.classList.add('opacity-100', 'scale-100');
+        } else {
+            alert("Modal elements not found in HTML!");
+        }
+    }
+
+    // Handle Sync Path Form Submission
+    const syncPathForm = document.getElementById('syncPathForm');
+    if (syncPathForm) {
+        syncPathForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const path = document.getElementById('localSyncPathInput').value.trim();
+            if (!path) return;
+            
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/users/${currentUser.id}/sync-path`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ local_sync_path: path })
+                });
+                const responseData = await response.json();
+                if (responseData.success) {
+                    // update local storage
+                    currentUser.local_sync_path = path;
+                    localStorage.setItem('user', JSON.stringify(currentUser));
+                    
+                    // Hide Modal
+                    const syncPathModal = document.getElementById('syncPathModal');
+                    const syncPathModalContent = document.getElementById('syncPathModalContent');
+                    syncPathModalContent.classList.remove('scale-100', 'opacity-100');
+                    syncPathModalContent.classList.add('scale-95', 'opacity-0');
+                    
+                    setTimeout(() => {
+                        syncPathModal.classList.remove('flex');
+                        syncPathModal.classList.add('hidden');
+                    }, 200); // match transition duration
+                } else {
+                    alert('Error saving sync path: ' + response.message);
+                }
+            } catch (err) {
+                console.error(err);
+                alert('An error occurred while saving the sync path.');
+            }
+        });
+    }
+
+
+
     // 2. Logout functionality
     const logoutBtn = document.getElementById('logoutBtn');
     if (logoutBtn) {
@@ -415,6 +472,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             
             if (result.success) {
+                // Initialize local directories if sync path is set
+                if (currentUser.local_sync_path) {
+                    try {
+                        let localBaseUrl = API_CONFIG.getLocalBaseUrl();
+                        const localRes = await fetch(localBaseUrl + '/init-project', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                basePath: currentUser.local_sync_path,
+                                projectName: projectData.title
+                            })
+                        });
+                        const localData = await localRes.json();
+                        if (!localData.success) {
+                            console.warn('Local initialization failed:', localData.message);
+                        }
+                    } catch (err) {
+                        console.error('Could not connect to local backend for initialization:', err);
+                    }
+                }
+                
                 closeModal();
                 fetchProjects(); // Refresh the list
             } else {
@@ -599,13 +677,30 @@ function renderProjects(projects) {
                     <div class="w-2 h-2 rounded-full ${project.status === 'ACTIVE' ? 'bg-primary animate-pulse' : 'bg-surface-variant'}"></div>
                     <h3 class="font-title-sm text-title-sm text-on-surface">${project.title}</h3>
                 </div>
-                <div class="flex gap-xs">
-                    <button class="text-on-surface-variant hover:text-primary transition-colors p-xs flex items-center justify-center">
+                <div class="flex gap-xs relative z-50">
+                    <button class="text-on-surface-variant hover:text-primary transition-colors p-xs flex items-center justify-center" onclick="window.location.href='project.html?id=${project.id}'">
                         <span class="material-symbols-outlined text-[16px]" data-icon="open_in_new">open_in_new</span>
                     </button>
-                    <button class="text-on-surface-variant hover:text-on-surface transition-colors p-xs flex items-center justify-center">
+                    <button class="text-on-surface-variant hover:text-on-surface transition-colors p-xs flex items-center justify-center" onclick="toggleDropdown(${project.id}, event)">
                         <span class="material-symbols-outlined text-[16px]" data-icon="more_vert">more_vert</span>
                     </button>
+                    <!-- Dropdown Menu -->
+                    <div id="dropdown-${project.id}" class="hidden absolute right-0 top-full mt-1 w-32 bg-surface-container border border-outline-variant rounded shadow-lg z-20 py-1 dropdown-menu">
+                        ${project.status === 'ARCHIVED' ? `
+                        <button class="w-full text-left px-4 py-2 text-sm hover:bg-surface-variant transition-colors text-on-surface flex items-center gap-2" onclick="unarchiveProject(${project.id}, event)">
+                            <span class="material-symbols-outlined text-[16px]">unarchive</span> Unarchive
+                        </button>
+                        ` : `
+                        <button class="w-full text-left px-4 py-2 text-sm hover:bg-surface-variant transition-colors text-on-surface flex items-center gap-2" onclick="archiveProject(${project.id}, event)">
+                            <span class="material-symbols-outlined text-[16px]">archive</span> Archive
+                        </button>
+                        `}
+                        ${project.owner_id === currentUser.id ? `
+                        <button class="w-full text-left px-4 py-2 text-sm hover:bg-error/10 text-error transition-colors flex items-center gap-2" onclick="openDeleteModal(${project.id}, event)">
+                            <span class="material-symbols-outlined text-[16px]">delete</span> Delete
+                        </button>
+                        ` : ''}
+                    </div>
                 </div>
             </div>
             <!-- Body -->
@@ -640,3 +735,147 @@ function renderProjects(projects) {
     // Update count
     projectCountDisplay.textContent = `Showing ${projects.length} active project${projects.length !== 1 ? 's' : ''}`;
 }
+
+// Click outside to close dropdowns
+document.addEventListener('click', () => {
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.add('hidden');
+    });
+});
+
+window.toggleDropdown = function(projectId, event) {
+    event.stopPropagation();
+    // Close others
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if (menu.id !== `dropdown-${projectId}`) {
+            menu.classList.add('hidden');
+        }
+    });
+    const dropdown = document.getElementById(`dropdown-${projectId}`);
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+};
+
+window.archiveProject = async function(projectId, event) {
+    event.stopPropagation();
+    
+    // Hide the dropdown immediately for visual feedback
+    const dropdown = document.getElementById(`dropdown-${projectId}`);
+    if (dropdown) dropdown.classList.add('hidden');
+    
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/archive`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        const result = await response.json();
+        if (result.success) {
+            // Refresh projects
+            fetchProjects();
+        } else {
+            console.error('Error archiving project:', result.message);
+            alert('Failed to archive project: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error archiving project:', error);
+    }
+};
+
+window.unarchiveProject = async function(projectId, event) {
+    event.stopPropagation();
+    
+    // Hide the dropdown immediately for visual feedback
+    const dropdown = document.getElementById(`dropdown-${projectId}`);
+    if (dropdown) dropdown.classList.add('hidden');
+    
+    try {
+        const response = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectId}/unarchive`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ userId: currentUser.id })
+        });
+        const result = await response.json();
+        if (result.success) {
+            // Refresh projects
+            fetchProjects();
+        } else {
+            console.error('Error unarchiving project:', result.message);
+            alert('Failed to unarchive project: ' + result.message);
+        }
+    } catch (error) {
+        console.error('Error unarchiving project:', error);
+    }
+};
+
+// Start initialization
+
+let projectToDelete = null;
+
+window.openDeleteModal = function(projectId, event) {
+    event.stopPropagation();
+    projectToDelete = projectId;
+    const modal = document.getElementById('deleteProjectModal');
+    const content = document.getElementById('deleteProjectModalContent');
+    if (modal && content) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => {
+            content.classList.remove('scale-95', 'opacity-0');
+            content.classList.add('scale-100', 'opacity-100');
+        }, 10);
+    }
+};
+
+window.closeDeleteModal = function() {
+    projectToDelete = null;
+    const modal = document.getElementById('deleteProjectModal');
+    const content = document.getElementById('deleteProjectModalContent');
+    if (modal && content) {
+        content.classList.remove('scale-100', 'opacity-100');
+        content.classList.add('scale-95', 'opacity-0');
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }, 200);
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => {
+    const cancelBtn = document.getElementById('cancelDeleteBtn');
+    const confirmBtn = document.getElementById('confirmDeleteBtn');
+    
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeDeleteModal);
+    }
+    
+    if (confirmBtn) {
+        confirmBtn.addEventListener('click', async () => {
+            if (!projectToDelete) return;
+            try {
+                const response = await fetch(`${API_CONFIG.BASE_URL}/projects/${projectToDelete}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ requesterId: currentUser.id })
+                });
+                const result = await response.json();
+                if (result.success) {
+                    closeDeleteModal();
+                    fetchProjects();
+                } else {
+                    console.error('Error deleting project:', result.message);
+                    alert('Failed to delete project: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error deleting project:', error);
+            }
+        });
+    }
+});

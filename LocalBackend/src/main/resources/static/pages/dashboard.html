@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ResearchHub - My Projects</title>
+    <!-- Google Fonts & Material Symbols -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="../js/tailwind-config.js"></script>
+    
+    <!-- Global CSS -->
+    <link href="../css/global.css" rel="stylesheet"/>
+</head>
+<body class="flex h-screen w-screen overflow-hidden text-body-base font-body-base bg-surface-container-lowest text-on-surface">
+    <!-- Activity Bar (Dock) -->
+    <div class="w-dock-width h-full bg-surface-container flex flex-col items-center py-lg border-r border-outline-variant flex-shrink-0 z-10">
+        <div class="mb-xl">
+            <span class="material-symbols-outlined text-primary cursor-pointer active:scale-95 transition-transform" data-icon="science" style="font-variation-settings: 'FILL' 1;">science</span>
+        </div>
+        <div class="flex flex-col gap-lg flex-grow">
+            <!-- Active State Navigation (My Projects) -->
+            <div class="p-xs bg-primary-container/20 rounded border-l-2 border-primary cursor-pointer flex items-center justify-center w-8 h-8 group relative">
+                <span class="material-symbols-outlined text-primary" data-icon="dashboard">dashboard</span>
+                <!-- Tooltip -->
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    My Projects
+                </div>
+            </div>
+            <!-- Inactive Navigation -->
+            <a href="notifications.html" id="notificationsBtn" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+                <div id="notificationBadge" class="absolute top-0 right-0 w-3 h-3 bg-error rounded-full border-2 border-surface-container hidden"></div>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Notifications
+                </div>
+            </a>
+        </div>
+        <div class="flex flex-col gap-lg mt-auto">
+            <a href="profile.html" id="profileBtn" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative border-l-2 border-transparent">
+                <span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Profile
+                </div>
+            </a>
+            <div id="logoutBtn" class="p-xs text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center w-8 h-8 transition-colors group relative">
+                <span class="material-symbols-outlined" data-icon="logout">logout</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Logout
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Collapsible Sidebar (Explorer) -->
+    <nav class="h-screen w-panel-sidebar bg-surface-container-low border-r border-outline-variant flex flex-col py-lg flex-shrink-0 z-10 transition-all duration-300" id="explorer-panel">
+        <!-- Header -->
+        <div class="px-md mb-xl flex items-center gap-sm">
+            <div class="w-8 h-8 rounded bg-surface-variant border border-outline-variant flex items-center justify-center overflow-hidden">
+                <span class="material-symbols-outlined text-on-surface-variant text-[20px]">person</span>
+            </div>
+            <div>
+                <h1 class="font-headline-md text-headline-md font-bold text-primary">ResearchHub</h1>
+                <p id="userNameDisplay" class="font-body-dense text-body-dense text-on-surface-variant">Analytical Workbench</p>
+            </div>
+        </div>
+        <!-- Navigation Context Title -->
+        <div class="px-md mb-sm flex justify-between items-center">
+            <h2 class="font-label-caps text-label-caps text-on-surface-variant tracking-wider">PROJECT VIEWS</h2>
+            <button id="manualSyncBtn" class="text-on-surface-variant hover:text-on-surface transition-colors flex items-center p-xs rounded hover:bg-surface-container-high active:scale-95 group relative">
+                <span class="material-symbols-outlined text-[16px]" data-icon="sync">sync</span>
+                <div class="absolute left-full ml-sm px-sm py-xs bg-surface-container-highest border border-outline-variant rounded text-on-surface text-code-sm font-code-sm opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity whitespace-nowrap z-50 shadow-[0_4px_12px_rgba(0,0,0,0.4)]">
+                    Force Sync
+                </div>
+            </button>
+        </div>
+        <!-- Scrollable Tab Area -->
+        <div class="flex-1 overflow-y-auto px-xs flex flex-col gap-[2px]">
+            <!-- Active Tab -->
+            <a id="tabAllProjects" class="flex items-center gap-md px-md py-sm bg-primary-container/10 border-l-2 border-primary text-primary font-title-sm text-title-sm rounded-r hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]" href="#">
+                <span class="material-symbols-outlined text-[18px]" data-icon="dashboard" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+                All Projects
+            </a>
+            <!-- Inactive Tabs -->
+            <a id="tabOwnedProjects" class="flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]" href="#">
+                <span class="material-symbols-outlined text-[18px]" data-icon="person">person</span>
+                Projects I Own
+            </a>
+            <a id="tabSharedProjects" class="flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98]" href="#">
+                <span class="material-symbols-outlined text-[18px]" data-icon="group">group</span>
+                Shared with Me
+            </a>
+            <a id="tabArchivedProjects" class="flex items-center gap-md px-md py-sm border-l-2 border-transparent text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors cursor-pointer active:scale-[0.98] mt-xl" href="#">
+                <span class="material-symbols-outlined text-[18px]" data-icon="archive">archive</span>
+                Archived
+            </a>
+        </div>
+    </nav>
+    <div class="split-gutter" id="gutter-1"></div>
+    
+    <!-- Main Workspace (Canvas) -->
+    <main class="flex-1 flex flex-col h-screen min-w-0 bg-surface-container-lowest relative">
+        <!-- TopAppBar (Contextual Header) -->
+        <header class="flex justify-between items-center w-full px-lg h-[48px] bg-surface border-b border-outline-variant flex-shrink-0">
+            <div class="flex items-center gap-md">
+                <!-- Breadcrumb/Title -->
+                <h2 class="font-title-sm text-title-sm font-bold text-on-surface flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px] text-on-surface-variant" data-icon="folder_open">folder_open</span>
+                    My Projects
+                </h2>
+            </div>
+            <!-- Toolbar Actions -->
+            <div class="flex items-center gap-md">
+                <!-- Offline Badge -->
+                <div id="offlineBadge" class="hidden items-center gap-xs px-sm h-[28px] bg-surface-container-high text-on-surface-variant border border-outline-variant rounded font-code-sm text-code-sm transition-all duration-300">
+                    <span class="material-symbols-outlined text-[16px]">cloud_off</span>
+                    Offline
+                </div>
+                <!-- Search Box -->
+                <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-sm text-[16px] text-on-surface-variant" data-icon="search">search</span>
+                    <input class="h-[28px] bg-surface-container-lowest border border-outline-variant rounded pl-xl pr-sm text-code-sm font-code-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary w-48 placeholder-on-surface-variant" placeholder="Filter projects..." type="text"/>
+                </div>
+                <div class="h-4 w-[1px] bg-outline-variant mx-xs"></div>
+                <button id="createProjectBtn" class="h-[28px] px-md bg-primary-container text-on-primary-container font-title-sm text-title-sm rounded hover:bg-primary transition-colors flex items-center gap-xs active:scale-95">
+                    <span class="material-symbols-outlined text-[16px]" data-icon="add">add</span>
+                    Create New Project
+                </button>
+            </div>
+        </header>
+        
+        <!-- Canvas Content Area -->
+        <div class="flex-1 overflow-auto p-xl">
+            <!-- Context Toolbar -->
+            <div class="flex justify-between items-center mb-lg">
+                <div class="flex items-center gap-sm">
+                    <span id="projectCountDisplay" class="font-code-sm text-code-sm text-on-surface-variant">Showing 0 active projects</span>
+                </div>
+                <div class="flex items-center gap-sm">
+                    <button class="h-[28px] px-sm bg-surface text-on-surface border border-outline-variant rounded hover:bg-surface-container-high transition-colors flex items-center gap-xs font-code-sm text-code-sm">
+                        <span class="material-symbols-outlined text-[16px]" data-icon="sort">sort</span>
+                        Last Activity
+                    </button>
+                    <button class="h-[28px] px-sm bg-surface text-on-surface border border-outline-variant rounded hover:bg-surface-container-high transition-colors flex items-center gap-xs font-code-sm text-code-sm">
+                        <span class="material-symbols-outlined text-[16px]" data-icon="filter_list">filter_list</span>
+                        Filter
+                    </button>
+                </div>
+            </div>
+            <!-- Bento Grid Layout for Projects -->
+            <div id="projectsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-lg">
+                <!-- Quick Action Widget (Always displayed as the last element or if empty) -->
+                <div class="bg-surface-container-low border border-outline-variant border-dashed rounded-lg flex flex-col items-center justify-center p-xl hover:bg-surface-container hover:border-primary/50 transition-colors cursor-pointer group" onclick="document.getElementById('createProjectBtn').click()">
+                    <div class="w-12 h-12 rounded-full bg-primary-container/10 flex items-center justify-center mb-md group-hover:bg-primary-container/20 transition-colors">
+                        <span class="material-symbols-outlined text-primary text-[24px]" data-icon="add_circle">add_circle</span>
+                    </div>
+                    <h3 class="font-title-sm text-title-sm text-on-surface mb-xs">Initialize Analysis</h3>
+                    <p class="font-body-dense text-body-dense text-on-surface-variant text-center max-w-[200px]">Create a new project environment or import existing datasets.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Create Project Modal (3-Step Wizard) -->
+    <div id="createProjectModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <!-- New full-screen or large modal container -->
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden scale-95 opacity-0 transition-all duration-200 relative" id="createProjectModalContent">
+            <!-- Header for Transactional Flow -->
+            <header class="flex justify-between items-center w-full px-lg h-[48px] bg-surface border-b border-outline-variant shrink-0">
+                <div class="flex items-center space-x-sm">
+                    <span class="material-symbols-outlined text-primary">science</span>
+                    <span class="font-headline-md text-headline-md font-bold text-on-surface">ResearchHub</span>
+                    <span class="text-on-surface-variant px-sm border-l border-outline-variant">New Project</span>
+                </div>
+                <div class="flex items-center space-x-sm">
+                    <button id="closeModalBtn" class="text-on-surface-variant hover:text-on-surface transition-colors p-xs rounded hover:bg-surface-container-highest">
+                        <span class="material-symbols-outlined text-[20px]">close</span>
+                    </button>
+                </div>
+            </header>
+            
+            <div class="flex-1 overflow-y-auto p-xl relative flex flex-col items-center">
+                <!-- Progress Stepper -->
+                <div class="w-full max-w-3xl flex items-center justify-between mb-lg px-xl py-md bg-surface-container-low border border-outline-variant rounded shrink-0">
+                    <div class="flex flex-col items-center w-1/3 transition-opacity" id="stepper-step-1">
+                        <div class="flex items-center space-x-sm text-primary font-bold stepper-text">
+                            <div class="w-6 h-6 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-body-dense text-body-dense stepper-circle">1</div>
+                            <span class="font-title-sm text-title-sm">Details</span>
+                        </div>
+                        <div class="h-1 w-full bg-primary mt-sm rounded-full stepper-bar"></div>
+                    </div>
+                    <div class="flex flex-col items-center w-1/3 opacity-50 transition-opacity" id="stepper-step-2">
+                        <div class="flex items-center space-x-sm text-on-surface-variant stepper-text">
+                            <div class="w-6 h-6 rounded-full bg-surface-variant text-on-surface flex items-center justify-center font-body-dense text-body-dense stepper-circle">2</div>
+                            <span class="font-title-sm text-title-sm">Team</span>
+                        </div>
+                        <div class="h-1 w-full bg-surface-variant mt-sm rounded-full stepper-bar"></div>
+                    </div>
+                    <div class="flex flex-col items-center w-1/3 opacity-50 transition-opacity" id="stepper-step-3">
+                        <div class="flex items-center space-x-sm text-on-surface-variant stepper-text">
+                            <div class="w-6 h-6 rounded-full bg-surface-variant text-on-surface flex items-center justify-center font-body-dense text-body-dense stepper-circle">3</div>
+                            <span class="font-title-sm text-title-sm">Review</span>
+                        </div>
+                        <div class="h-1 w-full bg-surface-variant mt-sm rounded-full stepper-bar"></div>
+                    </div>
+                </div>
+
+                <!-- Forms Container -->
+                <div class="w-full max-w-3xl flex-1 flex flex-col">
+                    <form id="createProjectForm" class="w-full h-full flex flex-col">
+                        <!-- Step 1: Details -->
+                        <div id="step-1-container" class="flex flex-col flex-1 w-full gap-xl">
+                            <div class="bg-surface border border-outline-variant rounded flex flex-col">
+                                <div class="h-[32px] bg-surface-container-low border-b border-outline-variant flex items-center px-md">
+                                    <h2 class="font-title-sm text-title-sm text-on-surface">Project Information</h2>
+                                </div>
+                                <div class="p-lg flex flex-col space-y-lg">
+                                    <!-- Project Name -->
+                                    <div class="flex flex-col space-y-xs">
+                                        <label class="font-title-sm text-title-sm text-on-surface" for="projectTitle">Project Name <span class="text-error">*</span></label>
+                                        <input class="h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-inset" id="projectTitle" placeholder="e.g. Q3 Clinical Trial Analysis" type="text" required />
+                                    </div>
+                                    <!-- Description -->
+                                    <div class="flex flex-col space-y-xs">
+                                        <label class="font-title-sm text-title-sm text-on-surface" for="projectDescription">Description</label>
+                                        <textarea class="bg-surface-container-lowest border border-outline-variant rounded p-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-inset resize-y" id="projectDescription" placeholder="Briefly describe the analytical goals of this project..." rows="4"></textarea>
+                                    </div>
+                                    <!-- Research Domain -->
+                                    <div class="flex flex-col space-y-xs">
+                                        <label class="font-title-sm text-title-sm text-on-surface" for="researchDomain">Research Domain <span class="text-error">*</span></label>
+                                        <input class="h-[36px] bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary focus:ring-inset" id="researchDomain" placeholder="e.g. Computer Vision" type="text" required />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex justify-end space-x-md mt-auto">
+                                <button type="button" id="cancelProjectBtn" class="h-[36px] px-md rounded bg-transparent border border-outline-variant text-on-surface font-title-sm text-title-sm hover:bg-surface-container-high transition-colors">Cancel</button>
+                                <button type="button" id="nextStep1Btn" class="h-[36px] px-md rounded bg-primary-container text-on-primary-container font-title-sm text-title-sm hover:bg-inverse-primary transition-colors flex items-center space-x-xs">
+                                    <span>Continue</span>
+                                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Team Setup -->
+                        <div id="step-2-container" class="hidden flex-col flex-1 w-full gap-xl">
+                            <div class="bg-surface border border-outline-variant rounded flex flex-col">
+                                <div class="h-[32px] bg-surface-container-low border-b border-outline-variant flex items-center px-md">
+                                    <h2 class="font-title-sm text-title-sm text-on-surface">Team Setup</h2>
+                                </div>
+                                <div class="p-lg flex flex-col space-y-lg">
+                                    <div class="h-[48px] bg-surface-container flex items-center px-lg border border-outline-variant rounded shrink-0 gap-md">
+                                        <div class="relative flex-1">
+                                            <span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">search</span>
+                                            <input class="w-full h-[36px] bg-surface-container-lowest border border-outline-variant rounded pl-[36px] pr-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all" id="teamSearchInput" placeholder="Search for members..." type="text" autocomplete="off"/>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="border border-outline-variant rounded overflow-hidden">
+                                        <div class="h-[32px] bg-surface-container-highest border-b border-outline-variant flex items-center px-lg grid grid-cols-[3fr_2fr_1fr] gap-md shrink-0">
+                                            <span class="font-title-sm text-title-sm text-on-surface">Member</span>
+                                            <span class="font-title-sm text-title-sm text-on-surface">Role</span>
+                                            <span class="font-title-sm text-title-sm text-on-surface text-right">Actions</span>
+                                        </div>
+                                        <div id="teamMembersList" class="flex flex-col bg-surface min-h-[100px] max-h-[300px] overflow-y-auto">
+                                            <!-- Members added here dynamically -->
+                                            <div id="emptyTeamMsg" class="p-md text-center text-on-surface-variant font-body-base text-body-base">
+                                                No team members added yet. You will be assigned as Supervisor.
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+
+                            
+                            <!-- Actions -->
+                            <div class="flex justify-end space-x-md mt-auto">
+                                <button type="button" id="prevStep2Btn" class="h-[36px] px-md rounded bg-transparent border border-outline-variant text-on-surface font-title-sm text-title-sm hover:bg-surface-container-high transition-colors">Back</button>
+                                <button type="button" id="nextStep2Btn" class="h-[36px] px-md rounded bg-primary-container text-on-primary-container font-title-sm text-title-sm hover:bg-inverse-primary transition-colors flex items-center space-x-xs">
+                                    <span>Next (Review)</span>
+                                    <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Step 3: Review -->
+                        <div id="step-3-container" class="hidden flex-col flex-1 w-full gap-xl">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-lg w-full">
+                                <!-- Left Column: Project Identity -->
+                                <div class="md:col-span-7 bg-surface-container-low border border-outline-variant rounded relative overflow-hidden flex flex-col">
+                                    <div class="absolute top-0 left-0 w-4 h-4 border-t border-l border-primary opacity-40"></div>
+                                    <div class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center px-md justify-between shrink-0">
+                                        <h2 class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Project Identity</h2>
+                                    </div>
+                                    <div class="p-lg flex flex-col space-y-lg flex-1">
+                                        <div class="flex items-start space-x-lg">
+                                            <div class="w-16 h-16 rounded bg-primary-container flex items-center justify-center shrink-0">
+                                                <span class="material-symbols-outlined text-on-primary text-3xl">science</span>
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <h1 id="reviewProjectName" class="font-headline-md text-headline-md font-bold text-on-surface break-words">--</h1>
+                                                <div class="flex items-center space-x-sm mt-xs">
+                                                    <span id="reviewProjectDomain" class="px-sm py-0.5 rounded bg-surface-container-highest text-code-sm text-on-surface-variant">--</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="space-y-sm">
+                                            <span class="font-label-caps text-label-caps text-outline uppercase">Description</span>
+                                            <p id="reviewProjectDesc" class="text-body-base text-on-surface-variant leading-relaxed break-words min-h-[40px]"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Right Column: Team Summary -->
+                                <div class="md:col-span-5 bg-surface-container-low border border-outline-variant rounded relative flex flex-col">
+                                    <div class="absolute top-0 right-0 w-4 h-4 border-t border-r border-primary opacity-40"></div>
+                                    <div class="h-[32px] bg-surface-container border-b border-outline-variant flex items-center px-md shrink-0">
+                                        <h2 class="font-label-caps text-label-caps text-primary uppercase tracking-widest">Team Summary</h2>
+                                    </div>
+                                    <div class="p-lg flex flex-col space-y-lg flex-1">
+                                        <div id="reviewTeamList" class="space-y-md max-h-[200px] overflow-y-auto pr-sm flex-1">
+                                            <!-- Team summary generated here -->
+                                        </div>
+                                        <div class="pt-md border-t border-outline-variant/30 shrink-0">
+                                            <div class="flex justify-between text-code-sm text-outline">
+                                                <span id="reviewTeamCount">Total Personnel: 0</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex justify-end space-x-md mt-auto">
+                                <button type="button" id="prevStep3Btn" class="h-[36px] px-md rounded bg-transparent border border-outline-variant text-on-surface font-title-sm text-title-sm hover:bg-surface-container-high transition-colors">Back</button>
+                                <button type="submit" id="submitProjectBtn" class="h-[36px] px-md rounded bg-primary-container text-on-primary-container font-title-sm text-title-sm hover:bg-inverse-primary transition-colors flex items-center space-x-xs">
+                                    <span>Create Project</span>
+                                    <span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Delete Project Confirmation Modal -->
+    <div id="deleteProjectModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface-container-lowest border border-error/50 rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col scale-95 opacity-0 transition-all duration-200" id="deleteProjectModalContent">
+            <div class="flex items-center space-x-md mb-md">
+                <div class="w-12 h-12 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-error text-[24px]">warning</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Delete Project</h2>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">This action cannot be undone.</p>
+                </div>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface mb-xl">Are you sure you want to delete this project? All associated data, team members, and resources will be permanently removed.</p>
+            <div class="flex justify-end space-x-md">
+                <button type="button" id="cancelDeleteBtn" class="h-[36px] px-md rounded bg-transparent border border-outline-variant text-on-surface font-title-sm text-title-sm hover:bg-surface-container-high transition-colors">Cancel</button>
+                <button type="button" id="confirmDeleteBtn" class="h-[36px] px-md rounded bg-error text-on-error font-title-sm text-title-sm hover:bg-error/80 transition-colors">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sync Path Modal -->
+    <div id="syncPathModal" class="fixed inset-0 bg-background/80 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl w-full max-w-md p-xl flex flex-col scale-95 opacity-0 transition-all duration-200" id="syncPathModalContent">
+            <div class="flex items-center space-x-md mb-md">
+                <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-on-primary-container text-[24px]">folder_managed</span>
+                </div>
+                <div>
+                    <h2 class="font-headline-sm text-headline-sm font-bold text-on-surface">Setup Workspace</h2>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">Required for offline access and syncing.</p>
+                </div>
+            </div>
+            <p class="font-body-base text-body-base text-on-surface mb-md">Please specify a local folder path where ResearchHub will store and sync all your project files (datasets, latex files).</p>
+            <form id="syncPathForm" class="flex flex-col space-y-md mb-lg">
+                <div class="flex flex-col space-y-xs">
+                    <label class="font-title-sm text-title-sm text-on-surface" for="localSyncPathInput">Local Directory Path <span class="text-error">*</span></label>
+                        <input class="h-[36px] flex-1 bg-surface-container-lowest border border-outline-variant rounded px-sm font-body-base text-body-base text-on-surface focus:outline-none focus:border-primary" id="localSyncPathInput" placeholder="e.g. C:\Users\88016\Desktop\ResearchHub" type="text" required />
+                    </div>
+                </div>
+            </form>
+            <div class="flex justify-end">
+                <button type="submit" form="syncPathForm" id="saveSyncPathBtn" class="h-[36px] px-md rounded bg-primary text-on-primary font-title-sm text-title-sm hover:bg-primary/90 transition-colors flex items-center gap-xs">
+                    <span class="material-symbols-outlined text-[18px]">save</span>
+                    Save Path
+                </button>
+            </div>
+        </div>
+    </div>
+    <script src="../js/api.js?v=3"></script>
+    <script src="../js/websocket.js?v=3"></script>
+    <script src="../js/dashboard.js?v=3"></script>
+</body>
+</html>
